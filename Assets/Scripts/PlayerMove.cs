@@ -20,8 +20,6 @@ public class PlayerMove : MonoBehaviour {
     [Header("Speeds")]
     public float moveSpeed = 5;
     public float airMoveSpeed = 5;
-    public float glideMoveSpeedF = 5;
-    public float glideMoveSpeedS = 2;
     public float turnSpeed = 4;
 
     [Header("Distances")]
@@ -31,14 +29,15 @@ public class PlayerMove : MonoBehaviour {
     public float jumpHeightMin = 0.4f;
     public float maxJumps = 1;
 
-    // [Header("Please set")]
+    [Header("Please set")]
+    public Transform followTarg;
     Transform cam;
     Rigidbody rb;
     Animator anim;
 
     [Space]
     [Header("*Calculated*")]
-    public float unJumpGravity;
+    public float jumpGravity;
     public float fallGravity;
     public float idleGravity;
     public float jumpVel;
@@ -54,7 +53,7 @@ public class PlayerMove : MonoBehaviour {
 
     Controls controls;
     Vector2 inpvel;
-    Vector2 inplook;
+    public Vector2 inplook;
     bool inpaction;
     bool inpjump;
     bool inpjumpHold;
@@ -73,6 +72,8 @@ public class PlayerMove : MonoBehaviour {
         controls.Player.Jump.performed += c => { inpjump = true; inpjumpHold = true; };
         controls.Player.Jump.canceled += c => { inpjumpHold = false; inpIntraJumpRelease = true; };
         controls.Player.Interact.performed += c => TryInteract();
+        controls.Player.Look.performed += c => inplook = c.ReadValue<Vector2>();
+        controls.Player.Look.canceled += c => inplook = Vector2.zero;
         inpIntraJumpRelease = true;
 
         state = MoveState.falling;
@@ -96,7 +97,7 @@ public class PlayerMove : MonoBehaviour {
         float bigJumpDist = jumpDist * 4 / 3;
         float smallJumpDist = jumpDist * 3 / 4;
         jumpVel = CalcVel(jumpHeight, bigJumpDist, airMoveSpeed);
-        unJumpGravity = CalcGrav(jumpHeight, bigJumpDist, airMoveSpeed);
+        jumpGravity = CalcGrav(jumpHeight, bigJumpDist, airMoveSpeed);
         fallGravity = CalcGrav(jumpHeight, smallJumpDist, airMoveSpeed);
         minJumpDur = jumpVel / CalcGrav(jumpHeightMin, jumpDistMin, airMoveSpeed);
         idleGravity = 0.01f;
@@ -112,10 +113,24 @@ public class PlayerMove : MonoBehaviour {
         // todo
         transform.position = Vector3.zero;
     }
-    void FixedUpdate() {
+    void Update() {
         if (transform.position.y < -50) {
             Respawn();
         }
+
+        // rotation
+        // followTarg.rotation *= Quaternion.AngleAxis(inplook.x * turnSpeed * Time.deltaTime, Vector3.up);
+
+        // rotate while moving
+        if (vel.sqrMagnitude > 0.01f) {
+            Vector3 flatVel = vel;
+            flatVel.y = 0;
+            float ang = Mathf.LerpAngle(0, Vector3.SignedAngle(transform.forward, flatVel, Vector3.up), turnSpeed * Time.deltaTime);
+            transform.rotation *= Quaternion.AngleAxis(ang, Vector3.up);
+        }
+    }
+    void FixedUpdate() {
+        // movement
         float grav = fallGravity;
         Vector3 inputVel = new Vector3(inpvel.x, 0, inpvel.y);
         Vector3 moveVel = Vector3.zero;
@@ -172,7 +187,7 @@ public class PlayerMove : MonoBehaviour {
                 moveVel = inputVel * moveSpeed;
                 break;
             case MoveState.jumping:
-                grav = unJumpGravity;
+                grav = jumpGravity;
                 moveVel = inputVel * airMoveSpeed;
                 break;
             case MoveState.falling:
@@ -192,7 +207,7 @@ public class PlayerMove : MonoBehaviour {
         moveVel.y = 0;
         vel += moveVel;
         vel += Vector3.down * grav * Time.deltaTime;
-        // todo turning
+
         // jump
         if (inpjumpHold && numJumps < maxJumps && inpIntraJumpRelease) {
             state = MoveState.jumping;
@@ -207,9 +222,9 @@ public class PlayerMove : MonoBehaviour {
 
         rb.velocity = vel;
         // Debug.Log("state: " + state);
-        anim.SetFloat("velx", vel.x);
-        anim.SetFloat("vely", vel.y);
-        anim.SetInteger("state", (int) state);
+        // anim.SetFloat("velx", vel.x);
+        // anim.SetFloat("vely", vel.y);
+        // anim.SetInteger("state", (int) state);
     }
     private void OnCollisionEnter(Collision other) {
         CheckGrounded(other);
