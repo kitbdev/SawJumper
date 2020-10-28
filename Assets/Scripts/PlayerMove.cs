@@ -12,6 +12,8 @@ public class PlayerMove : MonoBehaviour {
         walking,
         jumping,
         falling,
+        climbing,
+        fixedAnim,
         dead,
         frozen,
         MAX
@@ -28,12 +30,20 @@ public class PlayerMove : MonoBehaviour {
     public float jumpDistMin = 1f;
     public float jumpHeightMin = 0.4f;
     public float maxJumps = 1;
+    public float coyoteTimeDur = 0.2f;
+    public float maxClimbHeight = 2f;
+    public float minClimbHeight = 0.2f;
+    public float maxClimbWallDist = 0.5f;
+    public LayerMask climbableLayer = 1;
+    public LayerMask playerColMask = 1;
 
     [Header("Please set")]
     public Transform followTarg;
     Transform cam;
+    GameManager gm;
     Rigidbody rb;
     Animator anim;
+    CapsuleCollider capsule;
 
     [Space]
     [Header("*Calculated*")]
@@ -44,25 +54,30 @@ public class PlayerMove : MonoBehaviour {
     public float minJumpDur;
 
     [Header("*Dynamic*")]
-    public float numJumps = 1;
-    public float glideTimer = 0;
-    float minJumpTimer = 0;
     public bool isGrounded;
+    public float numJumps = 1;
+    float minJumpTimer = 0;
+    float lastGroundedTime;
     public Vector3 vel;
     public MoveState state = MoveState.idle;
+    public Transform lastRespawnT;
+    public Transform climbLanding;
 
+    // input stuff
     Controls controls;
     Vector2 inpvel;
-    public Vector2 inplook;
+    Vector2 inplook;
     bool inpaction;
     bool inpjump;
     bool inpjumpHold;
     bool inpIntraJumpRelease;
 
     void Awake() {
+        gm = GameObject.FindGameObjectWithTag("GameController").GetComponent<GameManager>();
         cam = Camera.main.transform;
         rb = GetComponent<Rigidbody>();
         anim = GetComponent<Animator>();
+        capsule = GetComponentInChildren<CapsuleCollider>();
 
         rb.useGravity = false;
 
@@ -76,8 +91,17 @@ public class PlayerMove : MonoBehaviour {
         controls.Player.Look.canceled += c => inplook = Vector2.zero;
         inpIntraJumpRelease = true;
 
+    }
+    private void Start() {
         state = MoveState.falling;
         CalcJump();
+
+        climbLanding = new GameObject().transform;
+        climbLanding.parent = transform;
+        climbLanding.localPosition = Vector3.zero;
+        lastRespawnT = new GameObject().transform;
+        lastRespawnT.parent = gm.transform;
+        lastRespawnT.position = Vector3.zero;
     }
     private void OnEnable() {
         controls.Enable();
@@ -110,8 +134,10 @@ public class PlayerMove : MonoBehaviour {
     }
     void Respawn() {
         state = MoveState.falling;
-        // todo
-        transform.position = Vector3.zero;
+        vel = Vector3.zero;
+        // todo move last respawn point
+        transform.position = lastRespawnT.position;
+        transform.rotation = lastRespawnT.rotation;
     }
     void Update() {
         if (transform.position.y < -50) {
@@ -152,6 +178,7 @@ public class PlayerMove : MonoBehaviour {
             vel.y = 0;
             moveVel = inputVel * moveSpeed;
         }
+        // state transitions
         switch (state) {
             case MoveState.idle:
                 if (!isGrounded) {
@@ -168,8 +195,10 @@ public class PlayerMove : MonoBehaviour {
                     state = MoveState.falling;
                 }
                 break;
+            case MoveState.climbing:
+                // wait for anim
+                break;
             case MoveState.dead:
-                // respawn timer
                 break;
             case MoveState.frozen:
                 break;
@@ -194,7 +223,13 @@ public class PlayerMove : MonoBehaviour {
                 grav = fallGravity;
                 moveVel = inputVel * airMoveSpeed;
                 break;
+            case MoveState.climbing:
+                grav = 0;
+                moveVel = Vector3.zero;
+                break;
             case MoveState.dead:
+                // respawn timer
+                // Respawn();
                 break;
             case MoveState.frozen:
 
@@ -209,7 +244,36 @@ public class PlayerMove : MonoBehaviour {
         vel += Vector3.down * grav * Time.deltaTime;
 
         // jump
-        if (inpjumpHold && numJumps < maxJumps && inpIntraJumpRelease) {
+        bool inputJump = inpjumpHold && inpIntraJumpRelease;
+        if (inputJump) {
+            // check climbing
+            // wall raycast
+            Vector3 wallRayDir = transform.forward;
+            if (Physics.Raycast(transform.position + Vector3.up * minClimbHeight, wallRayDir, out RaycastHit hit, maxClimbWallDist, climbableLayer)) {
+                // floor raycast
+                Vector3 floorRayStart = hit.point + wallRayDir * capsule.radius + Vector3.up * (maxClimbHeight - hit.point.y + transform.position.y);
+                if (Physics.Raycast(floorRayStart, Vector3.down, out RaycastHit hitTop, maxClimbHeight - minClimbHeight, playerColMask)) {
+                    // clearance space cast
+                    Vector3 climbToPos = hitTop.point + Vector3.up * 0.05f;
+                    float colHeight = capsule.height;
+                    float colRad = capsule.radius;
+                    if (!Physics.CheckCapsule(climbToPos + Vector3.up * (colHeight - 2 * colRad), climbToPos + Vector3.up * colRad, colRad, playerColMask)) {
+                        // can climb!
+                        float relHeight = hitTop.point.y - transform.position.y;
+                        Debug.Log("Can climb " + hit.collider.name + " h:" + relHeight);
+                        state = MoveState.climbing;
+                        climbLanding.position = climbToPos;
+                        climbLanding.forward = wallRayDir;
+                        vel = Vector3.zero;
+                        // todo start anim instead
+                        FinishClimb();
+                    }
+                }
+            }
+        }
+        // note: doesn't allow for air jumps
+        bool canJump = numJumps < maxJumps && (isGrounded || Time.time <= lastGroundedTime + coyoteTimeDur);
+        if (inputJump && canJump && state != MoveState.climbing) {
             state = MoveState.jumping;
             vel.y = jumpVel;
             numJumps++;
@@ -226,6 +290,11 @@ public class PlayerMove : MonoBehaviour {
         // anim.SetFloat("vely", vel.y);
         // anim.SetInteger("state", (int) state);
     }
+    public void FinishClimb() {
+        state = MoveState.falling;
+        transform.position = climbLanding.position;
+        transform.rotation = climbLanding.rotation;
+    }
     private void OnCollisionEnter(Collision other) {
         CheckGrounded(other);
     }
@@ -237,6 +306,7 @@ public class PlayerMove : MonoBehaviour {
     }
     void CheckGrounded(Collision other) {
         Collider col = GetComponent<Collider>();
+        bool wasGrounded = isGrounded;
         isGrounded = false;
         Vector3 center = transform.position + Vector3.up;
         foreach (var cp in other.contacts) {
@@ -245,6 +315,10 @@ public class PlayerMove : MonoBehaviour {
                 break;
             }
             // cp.otherCollider - center
+        }
+        if (wasGrounded ^ isGrounded) {
+            // state changed
+            lastGroundedTime = Time.time;
         }
         // check if we hit a wall or something
         // for grabbing onto?
