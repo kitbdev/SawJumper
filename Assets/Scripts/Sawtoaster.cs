@@ -56,6 +56,7 @@ public class Sawtoaster : MonoBehaviour {
     void SpawnBlade() {
         grabbedSawblade = Instantiate(sawbladep, transform.position, Quaternion.identity);
         grabbedSawblade.transform.parent = transform;
+        grabbedSawblade.transform.localScale = transform.localScale;
         var sb = grabbedSawblade.GetComponent<Sawblade>();
         sb.speed = 0;
     }

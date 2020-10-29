@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -13,7 +14,7 @@ public class PlayerMove : MonoBehaviour {
         jumping,
         falling,
         climbing,
-        fixedAnim,
+        praise,
         dead,
         frozen,
         MAX
@@ -68,13 +69,15 @@ public class PlayerMove : MonoBehaviour {
     public Rigidbody connectedBody;
     public Vector3 connectedGPos;
     public Vector3 connectedLPos;
+    public Interactable nearInteractable;
+    List<ContactPoint> curCps = new List<ContactPoint>();
 
     // input stuff
     Controls controls;
     Vector2 inpvel;
     Vector2 inplook;
     bool inpaction;
-    bool inpjump;
+    // bool inpjump;
     bool inpjumpHold;
     bool inpIntraJumpRelease;
 
@@ -90,7 +93,7 @@ public class PlayerMove : MonoBehaviour {
         controls = new Controls();
         controls.Player.Move.performed += c => inpvel = c.ReadValue<Vector2>();
         controls.Player.Move.canceled += c => inpvel = Vector2.zero;
-        controls.Player.Jump.performed += c => { inpjump = true; inpjumpHold = true; };
+        controls.Player.Jump.performed += c => { inpjumpHold = true; }; // inpjump = true;
         controls.Player.Jump.canceled += c => { inpjumpHold = false; inpIntraJumpRelease = true; };
         controls.Player.Interact.performed += c => TryInteract();
         controls.Player.Look.performed += c => inplook = c.ReadValue<Vector2>();
@@ -118,8 +121,27 @@ public class PlayerMove : MonoBehaviour {
         controls.Disable();
     }
 
+    public void SetInteractable(Interactable interactable) {
+        nearInteractable = interactable;
+    }
     public void TryInteract() {
+        if (nearInteractable) {
+            nearInteractable.Interacted();
+        }
+    }
 
+    public void Die() {
+        state = MoveState.dead;
+        // then respawn after
+        // Respawn();
+        Invoke("Respawn", 20);
+    }
+    public void Respawn() {
+        state = MoveState.falling;
+        vel = Vector3.zero;
+        // todo move last respawn point
+        transform.position = lastRespawnT.position;
+        transform.rotation = lastRespawnT.rotation;
     }
 
     [ContextMenu("Recalc Jump")]
@@ -140,13 +162,6 @@ public class PlayerMove : MonoBehaviour {
     float CalcGrav(float height, float dist, float vel) {
         return 2 * height * vel * vel / (dist * dist);
     }
-    void Respawn() {
-        state = MoveState.falling;
-        vel = Vector3.zero;
-        // todo move last respawn point
-        transform.position = lastRespawnT.position;
-        transform.rotation = lastRespawnT.rotation;
-    }
     void Update() {
         if (transform.position.y < -50) {
             Respawn();
@@ -161,9 +176,13 @@ public class PlayerMove : MonoBehaviour {
             flatVel.y = 0;
             float ang = Mathf.LerpAngle(0, Vector3.SignedAngle(transform.forward, flatVel, Vector3.up), turnSpeed * Time.deltaTime);
             transform.rotation *= Quaternion.AngleAxis(ang, Vector3.up);
+            anim.SetFloat("turn", ang);
+        } else {
+            anim.SetFloat("turn", 0);
         }
     }
     void FixedUpdate() {
+        CheckGrounded();
         // movement
         float grav = fallGravity;
         Vector3 inputVel = new Vector3(inpvel.x, 0, inpvel.y);
@@ -175,7 +194,8 @@ public class PlayerMove : MonoBehaviour {
         } else {
             inputVel = Vector3.zero;
         }
-        if (isGrounded && state != MoveState.jumping) {
+        bool inLockedStates = state == MoveState.climbing || state == MoveState.dead;
+        if (isGrounded && (state == MoveState.idle || state == MoveState.walking || state == MoveState.falling)) {
             if (anyMovement) {
                 state = MoveState.walking;
             } else {
@@ -237,6 +257,8 @@ public class PlayerMove : MonoBehaviour {
                 moveVel = Vector3.zero;
                 break;
             case MoveState.dead:
+                grav = 0;
+                moveVel = Vector3.zero;
                 // respawn timer
                 // Respawn();
                 break;
@@ -253,29 +275,30 @@ public class PlayerMove : MonoBehaviour {
         vel += Vector3.down * grav * Time.deltaTime;
 
         bool inputJump = inpjumpHold && inpIntraJumpRelease;
-        if (inputJump) {
+        if (inputJump && !inLockedStates) {
             // check climbing
             // wall raycast
-            // todo also check when wall is up off the ground
             RaycastHit hitWall, hitTop;
             Vector3 wallRayDir = transform.forward;
-            Vector3 wallRayStart = transform.position + Vector3.up * minClimbHeight + wallRayDir * (capsule.radius - 0.05f);
+            float wallRayRad = 0.1f;
+            float colRad = capsule.radius - 0.08f;
+            Vector3 wallRayStart = transform.position + Vector3.up * (minClimbHeight + wallRayRad) + wallRayDir * (colRad - 0.1f);
+            Vector3 wallRayStartTop = transform.position + Vector3.up * (maxClimbHeight - wallRayRad) + wallRayDir * (colRad - 0.1f);
             // Debug.Log("Check climb 1");
-            // Debug.DrawRay(wallRayStart, wallRayDir * maxClimbWallDist, Color.red, 2f, false);
-            if (Physics.Raycast(wallRayStart, wallRayDir, out hitWall, maxClimbWallDist, climbableLayer)) {
+            Debug.DrawRay(wallRayStart, wallRayDir * maxClimbWallDist, Color.red, 2f, false);
+            if (Physics.CapsuleCast(wallRayStart, wallRayStartTop, wallRayRad, wallRayDir, out hitWall, maxClimbWallDist, climbableLayer)) {
                 // floor raycast
                 Vector3 floorRayStart = hitWall.point + wallRayDir * capsule.radius + Vector3.up * (maxClimbHeight - hitWall.point.y + transform.position.y);
                 // Debug.Log("Check climb 2 " + hitWall.collider.name);
-                // Debug.DrawRay(floorRayStart, Vector3.down * (maxClimbHeight - minClimbHeight), Color.blue, 2f, false);
+                Debug.DrawRay(floorRayStart, Vector3.down * (maxClimbHeight - minClimbHeight), Color.blue, 2f, false);
                 if (Physics.Raycast(floorRayStart, Vector3.down, out hitTop, maxClimbHeight - minClimbHeight, playerColMask)) {
                     // clearance space cast
                     Vector3 climbToPos = hitTop.point + Vector3.up * 0.05f;
                     float colHeight = capsule.height;
-                    float colRad = capsule.radius - 0.05f;
                     Vector3 capsuleStartHeightC = climbToPos + Vector3.up * (colHeight - colRad);
                     Vector3 capsuleEndHeightC = climbToPos + Vector3.up * colRad;
                     // Debug.Log("Check climb 3 " + climbToPos);
-                    // Debug.DrawLine(capsuleStartHeightC + Vector3.up * colRad, capsuleEndHeightC + Vector3.down * colRad, Color.yellow, 4f, false);
+                    Debug.DrawLine(capsuleStartHeightC + Vector3.up * colRad, capsuleEndHeightC + Vector3.down * colRad, Color.yellow, 2f, false);
                     // Debug.DrawLine(capsuleStartHeightC + Vector3.left * colRad, capsuleStartHeightC + Vector3.right * colRad, Color.yellow, 4f, false);
                     // Debug.DrawLine(capsuleStartHeightC + Vector3.forward * colRad, capsuleStartHeightC + Vector3.back * colRad, Color.yellow, 4f, false);
                     // Debug.DrawLine(capsuleEndHeightC + Vector3.left * colRad, capsuleEndHeightC + Vector3.right * colRad, Color.yellow, 4f, false);
@@ -283,15 +306,21 @@ public class PlayerMove : MonoBehaviour {
                     if (!Physics.CheckCapsule(capsuleStartHeightC, capsuleEndHeightC, colRad, playerColMask)) {
                         // can climb!
                         float relHeight = hitTop.point.y - transform.position.y;
-                        Debug.Log("Can climb " + hitWall.collider.name + " h:" + relHeight);
+                        Debug.Log("Climbing " + hitWall.collider.name + " h:" + relHeight);
                         state = MoveState.climbing;
                         climbLanding.position = climbToPos;
                         climbLanding.forward = wallRayDir;
                         // for moving platforms
                         climbLanding.parent = hitTop.transform;
                         vel = Vector3.zero;
-                        // todo start anim instead
-                        FinishClimb();
+
+                        // transform.position = climbLanding.position;
+                        // transform.rotation = climbLanding.rotatio
+                        // Tween tween = transform.DOLocalMove(climbToPos - wallRayDir * colRad - Vector3.up * colHeight, 0.1f);
+                        // tween.SetLoops(0);
+                        // tween.Play();
+                        // FinishClimb();
+                        // debug
                         // } else {
                         //     var cs = Physics.OverlapCapsule(capsuleStartHeightC, capsuleEndHeightC, colRad, playerColMask);
                         //     Debug.Log("obstructed!");
@@ -309,7 +338,7 @@ public class PlayerMove : MonoBehaviour {
             state = MoveState.jumping;
             vel.y = jumpVel;
             numJumps++;
-            inpjump = false;
+            // inpjump = false;
             isGrounded = false;
             minJumpTimer = Time.time;
             inpIntraJumpRelease = false;
@@ -323,14 +352,20 @@ public class PlayerMove : MonoBehaviour {
             Vector3 rotVel = connectedLPos - lastLPos;
             rotVel /= Time.deltaTime;
             Debug.Log($"conVel: {connectedVel} conrot: {rotVel}");
-            vel += connectedVel;// + rotVel;
+            vel += connectedVel; // + rotVel;
         }
 
         rb.velocity = vel;
         // Debug.Log("state: " + state);
         // anim.SetFloat("velx", vel.x);
-        // anim.SetFloat("vely", vel.y);
-        // anim.SetInteger("state", (int) state);
+        anim.SetFloat("speed", vel.magnitude / moveSpeed);
+        anim.SetInteger("state", (int) state);
+        anim.SetBool("grounded", isGrounded);
+    }
+    public void ClimbRepos() {
+        // state = MoveState.falling;
+        transform.position = climbLanding.position;
+        transform.rotation = climbLanding.rotation;
     }
     public void FinishClimb() {
         state = MoveState.falling;
@@ -338,26 +373,36 @@ public class PlayerMove : MonoBehaviour {
         transform.rotation = climbLanding.rotation;
     }
     private void OnCollisionEnter(Collision other) {
-        CheckGrounded(other);
+        // Debug.Log("colenter");
+        ReportCol(other);
     }
     private void OnCollisionStay(Collision other) {
-        CheckGrounded(other);
+        // Debug.Log("colstay");
+        ReportCol(other);
     }
     private void OnCollisionExit(Collision other) {
-        CheckGrounded(other);
+        // Debug.Log("colex");
+        // CheckGrounded(other);
     }
-    void CheckGrounded(Collision other) {
+    void ReportCol(Collision other) {
+        ContactPoint[] contacts = new ContactPoint[other.contactCount];
+        other.GetContacts(contacts);
+        foreach (var cp in contacts) {
+            curCps.Add(cp);
+        }
+    }
+    void CheckGrounded() {
         bool wasGrounded = isGrounded;
         wallContact = false;
         isGrounded = false;
         var wasConnectedBodyRb = connectedBody;
         connectedBody = null;
         Vector3 center = transform.position + Vector3.up;
-        ContactPoint[] contacts = new ContactPoint[other.contactCount];
-        other.GetContacts(contacts);
+        // ContactPoint[] contacts = new ContactPoint[other.contactCount];
+        // other.GetContacts(contacts);
         // Debug.Log(other.contactCount + " contacts");
         // float surfaceThres = 0.7f;
-        foreach (var cp in contacts) {
+        foreach (var cp in curCps) {
             float updot = Vector3.Dot(cp.normal, Vector3.up);
             if (updot >= 0.7f) {
                 isGrounded = true;
@@ -376,7 +421,9 @@ public class PlayerMove : MonoBehaviour {
         if (wasGrounded ^ isGrounded) {
             // state changed
             lastGroundedTime = Time.time;
+            // Debug.Log("grounded: " + isGrounded);
         }
+        curCps.Clear();
     }
     void UpdateConnectedPos() {
         connectedGPos = connectedBody.transform.position;

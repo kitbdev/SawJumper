@@ -6,12 +6,13 @@ using UnityEngine.Events;
 public class Interactable : MonoBehaviour {
     
     public bool oneTime = true;
-    public float cooldownDur = 0.5f;
+    public float cooldownDur = 0.2f;
     [Space]
     public bool beenHit = false;
     float lastInteractTime = 0;
 
     public UnityEvent interactedEvent;
+    public GameObject promptGO;
     Transform interactableUI;
     Animation anim;
     GameManager gm;
@@ -42,5 +43,23 @@ public class Interactable : MonoBehaviour {
     }
     private void OnTriggerEnter(Collider other) {
         // ready to be interacted with, show prompt
+        if (other.CompareTag("Player")) {
+            other.GetComponentInParent<PlayerMove>().SetInteractable(this);
+            ShowPrompt();
+        }
+    }
+    private void OnTriggerExit(Collider other) {
+        if (other.CompareTag("Player")) {
+            other.GetComponentInParent<PlayerMove>().SetInteractable(null);
+            HidePrompt();
+        }
+    }
+    public void ShowPrompt() {
+        promptGO.transform.position = transform.position;
+        promptGO.SetActive(true);
+        // animate?
+    }
+    public void HidePrompt() {
+        promptGO.SetActive(true);
     }
 }
