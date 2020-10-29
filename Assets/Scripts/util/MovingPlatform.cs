@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DG.Tweening;
 using UnityEngine;
 
+[SelectionBase]
 public class MovingPlatform : MonoBehaviour {
 
     public Vector3[] path = new Vector3[0];

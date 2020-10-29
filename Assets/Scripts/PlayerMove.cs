@@ -38,6 +38,7 @@ public class PlayerMove : MonoBehaviour {
     public float maxClimbWallDist = 0.5f;
     public LayerMask climbableLayer = 1;
     public LayerMask playerColMask = 1;
+    public float respawnDur = 3;
 
     // [Header("Please set")]
     // public Transform followTarg;
@@ -46,6 +47,7 @@ public class PlayerMove : MonoBehaviour {
     Rigidbody rb;
     Animator anim;
     CapsuleCollider capsule;
+    Health health;
 
     [Space]
     [Header("*Calculated*")]
@@ -87,7 +89,7 @@ public class PlayerMove : MonoBehaviour {
         rb = GetComponent<Rigidbody>();
         anim = GetComponent<Animator>();
         capsule = GetComponentInChildren<CapsuleCollider>();
-
+        health = GetComponent<Health>();
         rb.useGravity = false;
 
         controls = new Controls();
@@ -116,9 +118,11 @@ public class PlayerMove : MonoBehaviour {
     }
     private void OnEnable() {
         controls.Enable();
+        health.deadEvent.AddListener(Die);
     }
     private void OnDisable() {
         controls.Disable();
+        health.deadEvent.RemoveListener(Die);
     }
 
     public void SetInteractable(Interactable interactable) {
@@ -134,12 +138,17 @@ public class PlayerMove : MonoBehaviour {
         state = MoveState.dead;
         // then respawn after
         // Respawn();
-        Invoke("Respawn", 20);
+        // anim.SetInteger("state",(int)state);
+        // Debug.Log(anim.GetCurrentAnimatorClipInfo(0)[0].clip.name);
+        // todo ui prompt instead??
+        Invoke("Respawn", respawnDur);
     }
     public void Respawn() {
         state = MoveState.falling;
         vel = Vector3.zero;
+        health.SetHealth();
         // todo move last respawn point
+        // based on level? or dynamically to last (non moving) platform we were on?
         transform.position = lastRespawnT.position;
         transform.rotation = lastRespawnT.rotation;
     }

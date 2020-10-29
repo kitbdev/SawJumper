@@ -8,6 +8,7 @@ public class MovingPlatformEditor : Editor {
     MovingPlatform movingPlatform;
     bool moveRel = true;
     Vector3 lastPos = Vector3.zero;
+    Quaternion lastRot = Quaternion.identity;
 
     void OnEnable() {
         movingPlatform = (MovingPlatform) target;
@@ -15,6 +16,7 @@ public class MovingPlatformEditor : Editor {
             movingPlatform.path = new Vector3[] { movingPlatform.transform.position };
         }
         lastPos = movingPlatform.transform.position;
+        lastRot = movingPlatform.transform.rotation;
     }
     public override void OnInspectorGUI() {
         base.OnInspectorGUI();
@@ -23,6 +25,12 @@ public class MovingPlatformEditor : Editor {
             Undo.RecordObject(movingPlatform, "Add point");
             List<Vector3> vl = new List<Vector3>(movingPlatform.path);
             vl.Add(vl[vl.Count - 1] + Vector3.forward * 2);
+            movingPlatform.path = vl.ToArray();
+        }
+        if (GUILayout.Button("Add Point up")) {
+            Undo.RecordObject(movingPlatform, "Add point up");
+            List<Vector3> vl = new List<Vector3>(movingPlatform.path);
+            vl.Add(vl[vl.Count - 1] + Vector3.up * 2);
             movingPlatform.path = vl.ToArray();
         }
         if (GUILayout.Button("Remove Point")) {
@@ -47,6 +55,7 @@ public class MovingPlatformEditor : Editor {
         moveRel = GUILayout.Toggle(moveRel, "Relative Movement");
         if (moveRel && !wasmoverel) {
             lastPos = movingPlatform.transform.position;
+            lastRot = movingPlatform.transform.rotation;
             // movingPlatform.path[0] = movingPlatform.transform.position;
         }
         if (EditorGUI.EndChangeCheck()) {
@@ -63,13 +72,18 @@ public class MovingPlatformEditor : Editor {
         // }
         // Vector3 gpos = movingPlatform.transform.position;
         Quaternion grot = movingPlatform.transform.rotation;
-        for (int i = 1; i < movingPlatform.path.Length; i++) {
-            Vector3 pos = movingPlatform.path[i];
-            // var npos = Handles.FreeMoveHandle(pos, grot,0.2f,Vector3.zero,Handles.SphereHandleCap);
-            var npos = Handles.PositionHandle(pos, grot);
-            if (npos != pos) {
-                Undo.RecordObject(movingPlatform, "Move point");
-                movingPlatform.path[i] = npos;
+        if (Tools.pivotRotation == PivotRotation.Global) {
+            grot = Quaternion.identity;
+        }
+        if (Tools.current == Tool.Move) {
+            for (int i = 1; i < movingPlatform.path.Length; i++) {
+                Vector3 pos = movingPlatform.path[i];
+                // var npos = Handles.FreeMoveHandle(pos, grot,0.2f,Vector3.zero,Handles.SphereHandleCap);
+                var npos = Handles.PositionHandle(pos, grot);
+                if (npos != pos) {
+                    Undo.RecordObject(movingPlatform, "Move point");
+                    movingPlatform.path[i] = npos;
+                }
             }
         }
         if (moveRel && !Application.isPlaying) {
@@ -81,6 +95,21 @@ public class MovingPlatformEditor : Editor {
                     movingPlatform.path[i] += dpos;
                 }
                 lastPos = newPos;
+            }
+            var newRot = movingPlatform.transform.rotation;
+            if (newRot != lastRot) {
+                // move relative
+                var drot = Quaternion.Inverse(lastRot) * newRot;
+                for (int i = 1; i < movingPlatform.path.Length; i++) {
+                    var p = movingPlatform.path[i];
+                    // p = movingPlatform.transform.InverseTransformPoint(p);
+                    var dir = p - movingPlatform.transform.position;
+                    dir = drot * dir;
+                    p = dir + movingPlatform.transform.position;
+                    // p = movingPlatform.transform.TransformPoint(p);
+                    movingPlatform.path[i] = p;
+                }
+                lastRot = newRot;
             }
         }
     }

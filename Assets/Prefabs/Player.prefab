@@ -318,6 +318,7 @@ MonoBehaviour:
   playerColMask:
     serializedVersion: 2
     m_Bits: 513
+  respawnDur: 3
   jumpGravity: 0
   fallGravity: 0
   idleGravity: 0
@@ -348,7 +349,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxHealth: 3
+  regenSpeed: 5
+  regenDelay: 5
   curHealth: 0
+  lastHurtTime: 0
+  regenTickTime: 0
   healthChangedEvent:
     m_PersistentCalls:
       m_Calls: []
@@ -521,6 +526,16 @@ PrefabInstance:
       propertyPath: m_Name
       value: bigguyf
       objectReference: {fileID: 0}
+    - target: {fileID: 5074512353664290214, guid: a1bea500da79b364187fce6c4d64d674,
+        type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: f108e0edb92a0a342b4cc0804cdabae4, type: 2}
+    - target: {fileID: 5074512353664290214, guid: a1bea500da79b364187fce6c4d64d674,
+        type: 3}
+      propertyPath: m_Materials.Array.data[1]
+      value: 
+      objectReference: {fileID: 2100000, guid: 0b14c0e241bf40144be10d87da4543c3, type: 2}
     - target: {fileID: 5866666021909216657, guid: a1bea500da79b364187fce6c4d64d674,
         type: 3}
       propertyPath: m_Enabled

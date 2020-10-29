@@ -22,7 +22,9 @@ public class Hurtbox : MonoBehaviour {
         }
     }
     void Hit(Collider other) {
-        if ((layerMask & (1 << other.gameObject.layer)) > 0) {
+        // Debug.Log("test hit "+other.name);
+        if ((layerMask & (1 << other.gameObject.layer)) != 0) {
+            // Debug.Log("hit "+other.name);
             Health hitme = other.GetComponent<Health>();
             if (!hitme) {
                 hitme = other.GetComponentInParent<Health>();
