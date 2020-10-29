@@ -18,8 +18,10 @@ public class Sawtoaster : MonoBehaviour {
     public Transform grabberT;
 
     GameObject grabbedSawblade;
+    // GameManager gm;
 
     void Start() {
+        // gm = GameObject.FindGameObjectWithTag("GameController").GetComponent<GameManager>();
         if (autoStart) {
             LaunchIn(startDelay);
         }
@@ -58,8 +60,8 @@ public class Sawtoaster : MonoBehaviour {
         sb.speed = 0;
     }
     void ReleaseBlade() {
-        grabbedSawblade.transform.position = grabberT.position;
         grabbedSawblade.transform.parent = null;
+        grabbedSawblade.transform.position = grabberT.position;
         grabbedSawblade.transform.forward = transform.forward;
         var sb = grabbedSawblade.GetComponent<Sawblade>();
         sb.speed = launchSpeed;

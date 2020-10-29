@@ -22,6 +22,7 @@ public class PlayerMove : MonoBehaviour {
     [Header("Speeds")]
     public float moveSpeed = 5;
     public float airMoveSpeed = 5;
+    public float jumpMoveSpeed = 20;
     public float turnSpeed = 4;
 
     [Header("Distances")]
@@ -37,8 +38,8 @@ public class PlayerMove : MonoBehaviour {
     public LayerMask climbableLayer = 1;
     public LayerMask playerColMask = 1;
 
-    [Header("Please set")]
-    public Transform followTarg;
+    // [Header("Please set")]
+    // public Transform followTarg;
     Transform cam;
     GameManager gm;
     Rigidbody rb;
@@ -55,6 +56,8 @@ public class PlayerMove : MonoBehaviour {
 
     [Header("*Dynamic*")]
     public bool isGrounded;
+    public bool wallContact;
+    public Vector3 wallContactNormal = Vector3.zero;
     public float numJumps = 1;
     float minJumpTimer = 0;
     float lastGroundedTime;
@@ -62,6 +65,9 @@ public class PlayerMove : MonoBehaviour {
     public MoveState state = MoveState.idle;
     public Transform lastRespawnT;
     public Transform climbLanding;
+    public Rigidbody connectedBody;
+    public Vector3 connectedGPos;
+    public Vector3 connectedLPos;
 
     // input stuff
     Controls controls;
@@ -98,8 +104,10 @@ public class PlayerMove : MonoBehaviour {
 
         climbLanding = new GameObject().transform;
         climbLanding.parent = transform;
+        climbLanding.name = "Climbing helper";
         climbLanding.localPosition = Vector3.zero;
         lastRespawnT = new GameObject().transform;
+        lastRespawnT.name = "Respawn Point";
         lastRespawnT.parent = gm.transform;
         lastRespawnT.position = Vector3.zero;
     }
@@ -120,8 +128,8 @@ public class PlayerMove : MonoBehaviour {
         // fast fall
         float bigJumpDist = jumpDist * 4 / 3;
         float smallJumpDist = jumpDist * 3 / 4;
-        jumpVel = CalcVel(jumpHeight, bigJumpDist, airMoveSpeed);
-        jumpGravity = CalcGrav(jumpHeight, bigJumpDist, airMoveSpeed);
+        jumpVel = CalcVel(jumpHeight, bigJumpDist, jumpMoveSpeed);
+        jumpGravity = CalcGrav(jumpHeight, bigJumpDist, jumpMoveSpeed);
         fallGravity = CalcGrav(jumpHeight, smallJumpDist, airMoveSpeed);
         minJumpDur = jumpVel / CalcGrav(jumpHeightMin, jumpDistMin, airMoveSpeed);
         idleGravity = 0.01f;
@@ -191,7 +199,8 @@ public class PlayerMove : MonoBehaviour {
                 }
                 break;
             case MoveState.jumping:
-                if (vel.y <= 0 || (inpjumpHold == false && Time.time >= minJumpTimer + minJumpDur)) {
+                bool hitWall = wallContact && Vector3.Dot(vel, wallContactNormal) < -0.3f;
+                if (vel.y <= 0 || (inpjumpHold == false && Time.time >= minJumpTimer + minJumpDur) || hitWall) {
                     state = MoveState.falling;
                 }
                 break;
@@ -217,7 +226,7 @@ public class PlayerMove : MonoBehaviour {
                 break;
             case MoveState.jumping:
                 grav = jumpGravity;
-                moveVel = inputVel * airMoveSpeed;
+                moveVel = inputVel * jumpMoveSpeed;
                 break;
             case MoveState.falling:
                 grav = fallGravity;
@@ -243,34 +252,57 @@ public class PlayerMove : MonoBehaviour {
         vel += moveVel;
         vel += Vector3.down * grav * Time.deltaTime;
 
-        // jump
         bool inputJump = inpjumpHold && inpIntraJumpRelease;
         if (inputJump) {
             // check climbing
             // wall raycast
+            // todo also check when wall is up off the ground
+            RaycastHit hitWall, hitTop;
             Vector3 wallRayDir = transform.forward;
-            if (Physics.Raycast(transform.position + Vector3.up * minClimbHeight, wallRayDir, out RaycastHit hit, maxClimbWallDist, climbableLayer)) {
+            Vector3 wallRayStart = transform.position + Vector3.up * minClimbHeight + wallRayDir * (capsule.radius - 0.05f);
+            // Debug.Log("Check climb 1");
+            // Debug.DrawRay(wallRayStart, wallRayDir * maxClimbWallDist, Color.red, 2f, false);
+            if (Physics.Raycast(wallRayStart, wallRayDir, out hitWall, maxClimbWallDist, climbableLayer)) {
                 // floor raycast
-                Vector3 floorRayStart = hit.point + wallRayDir * capsule.radius + Vector3.up * (maxClimbHeight - hit.point.y + transform.position.y);
-                if (Physics.Raycast(floorRayStart, Vector3.down, out RaycastHit hitTop, maxClimbHeight - minClimbHeight, playerColMask)) {
+                Vector3 floorRayStart = hitWall.point + wallRayDir * capsule.radius + Vector3.up * (maxClimbHeight - hitWall.point.y + transform.position.y);
+                // Debug.Log("Check climb 2 " + hitWall.collider.name);
+                // Debug.DrawRay(floorRayStart, Vector3.down * (maxClimbHeight - minClimbHeight), Color.blue, 2f, false);
+                if (Physics.Raycast(floorRayStart, Vector3.down, out hitTop, maxClimbHeight - minClimbHeight, playerColMask)) {
                     // clearance space cast
                     Vector3 climbToPos = hitTop.point + Vector3.up * 0.05f;
                     float colHeight = capsule.height;
-                    float colRad = capsule.radius;
-                    if (!Physics.CheckCapsule(climbToPos + Vector3.up * (colHeight - 2 * colRad), climbToPos + Vector3.up * colRad, colRad, playerColMask)) {
+                    float colRad = capsule.radius - 0.05f;
+                    Vector3 capsuleStartHeightC = climbToPos + Vector3.up * (colHeight - colRad);
+                    Vector3 capsuleEndHeightC = climbToPos + Vector3.up * colRad;
+                    // Debug.Log("Check climb 3 " + climbToPos);
+                    // Debug.DrawLine(capsuleStartHeightC + Vector3.up * colRad, capsuleEndHeightC + Vector3.down * colRad, Color.yellow, 4f, false);
+                    // Debug.DrawLine(capsuleStartHeightC + Vector3.left * colRad, capsuleStartHeightC + Vector3.right * colRad, Color.yellow, 4f, false);
+                    // Debug.DrawLine(capsuleStartHeightC + Vector3.forward * colRad, capsuleStartHeightC + Vector3.back * colRad, Color.yellow, 4f, false);
+                    // Debug.DrawLine(capsuleEndHeightC + Vector3.left * colRad, capsuleEndHeightC + Vector3.right * colRad, Color.yellow, 4f, false);
+                    // Debug.DrawLine(capsuleEndHeightC + Vector3.forward * colRad, capsuleEndHeightC + Vector3.back * colRad, Color.yellow, 4f, false);
+                    if (!Physics.CheckCapsule(capsuleStartHeightC, capsuleEndHeightC, colRad, playerColMask)) {
                         // can climb!
                         float relHeight = hitTop.point.y - transform.position.y;
-                        Debug.Log("Can climb " + hit.collider.name + " h:" + relHeight);
+                        Debug.Log("Can climb " + hitWall.collider.name + " h:" + relHeight);
                         state = MoveState.climbing;
                         climbLanding.position = climbToPos;
                         climbLanding.forward = wallRayDir;
+                        // for moving platforms
+                        climbLanding.parent = hitTop.transform;
                         vel = Vector3.zero;
                         // todo start anim instead
                         FinishClimb();
+                        // } else {
+                        //     var cs = Physics.OverlapCapsule(capsuleStartHeightC, capsuleEndHeightC, colRad, playerColMask);
+                        //     Debug.Log("obstructed!");
+                        //     foreach (var c in cs) {
+                        //         Debug.Log(" by " + c.name);
+                        //     }
                     }
                 }
             }
         }
+        // jump
         // note: doesn't allow for air jumps
         bool canJump = numJumps < maxJumps && (isGrounded || Time.time <= lastGroundedTime + coyoteTimeDur);
         if (inputJump && canJump && state != MoveState.climbing) {
@@ -282,7 +314,17 @@ public class PlayerMove : MonoBehaviour {
             minJumpTimer = Time.time;
             inpIntraJumpRelease = false;
         }
-        // todo moving platforms
+        // moving platforms
+        if (connectedBody) {
+            Vector3 connectedVel = connectedBody.transform.position - connectedGPos;
+            connectedVel /= Time.deltaTime;
+            Vector3 lastLPos = connectedLPos;
+            UpdateConnectedPos();
+            Vector3 rotVel = connectedLPos - lastLPos;
+            rotVel /= Time.deltaTime;
+            Debug.Log($"conVel: {connectedVel} conrot: {rotVel}");
+            vel += connectedVel;// + rotVel;
+        }
 
         rb.velocity = vel;
         // Debug.Log("state: " + state);
@@ -305,22 +347,39 @@ public class PlayerMove : MonoBehaviour {
         CheckGrounded(other);
     }
     void CheckGrounded(Collision other) {
-        Collider col = GetComponent<Collider>();
         bool wasGrounded = isGrounded;
+        wallContact = false;
         isGrounded = false;
+        var wasConnectedBodyRb = connectedBody;
+        connectedBody = null;
         Vector3 center = transform.position + Vector3.up;
-        foreach (var cp in other.contacts) {
-            if (Vector3.Dot(cp.normal, Vector3.up) > 0.7f) {
+        ContactPoint[] contacts = new ContactPoint[other.contactCount];
+        other.GetContacts(contacts);
+        // Debug.Log(other.contactCount + " contacts");
+        // float surfaceThres = 0.7f;
+        foreach (var cp in contacts) {
+            float updot = Vector3.Dot(cp.normal, Vector3.up);
+            if (updot >= 0.7f) {
                 isGrounded = true;
+                connectedBody = cp.otherCollider.attachedRigidbody;
                 break;
+            } else if (updot > -0.7f) {
+                // hit a wall
+                wallContact = true;
+                wallContactNormal = cp.normal;
             }
             // cp.otherCollider - center
+        }
+        if (connectedBody && connectedBody != wasConnectedBodyRb) {
+            UpdateConnectedPos();
         }
         if (wasGrounded ^ isGrounded) {
             // state changed
             lastGroundedTime = Time.time;
         }
-        // check if we hit a wall or something
-        // for grabbing onto?
+    }
+    void UpdateConnectedPos() {
+        connectedGPos = connectedBody.transform.position;
+        connectedLPos = connectedBody.transform.InverseTransformPoint(transform.position - connectedGPos);
     }
 }
