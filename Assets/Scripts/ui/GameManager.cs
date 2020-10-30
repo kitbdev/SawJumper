@@ -33,15 +33,12 @@ public class GameManager : MonoBehaviour {
         if (curScene < SceneManager.sceneCountInBuildSettings) {
             // load next scene
             StartCoroutine(LoadNewScene(curScene + 1));
-            // curScene++;
-            // SceneManager.LoadScene(curScene, LoadSceneMode.Additive);
-            // foreach (var spawnme in gosToSpawnOnLevel) {
-            //     Instantiate(spawnme);
-            // }
-            // playert = GameObject.FindGameObjectWithTag("Player").transform;
         } else {
             Debug.LogWarning("Last Scene Reached! " + curScene);
         }
+    }
+    public void RestartLevel() {
+        StartCoroutine(LoadNewScene(curScene));
     }
     public UnityEvent loadStartEvent;
     IEnumerator LoadNewScene(int newScene, bool onlyLoad = false) {
@@ -67,6 +64,7 @@ public class GameManager : MonoBehaviour {
                 yield return null;
             }
             curScene = newScene;
+            level = curScene - 2;
             loadingScene = false;
         }
     }

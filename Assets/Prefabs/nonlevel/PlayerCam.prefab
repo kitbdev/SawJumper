@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 6330085709166515591}
   - component: {fileID: 6330085709166515608}
   - component: {fileID: 6330085709166515609}
-  - component: {fileID: 6330085709166515613}
   - component: {fileID: 6330085709166515610}
   - component: {fileID: 6330085709166515611}
   - component: {fileID: 6330085709166515612}
@@ -186,19 +185,6 @@ MonoBehaviour:
   PlayerIndex: -1
   XYAxis: {fileID: -773816581736151472, guid: 3dfab42f0595845499ea4ec508f4f551, type: 3}
   ZAxis: {fileID: 5554165628215432849, guid: 3dfab42f0595845499ea4ec508f4f551, type: 3}
---- !u!114 &6330085709166515613
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6330085709166515588}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 158e20742fa174c47a70d70464fdcd76, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  recenterButton: {fileID: 0}
 --- !u!114 &6330085709166515610
 MonoBehaviour:
   m_ObjectHideFlags: 0

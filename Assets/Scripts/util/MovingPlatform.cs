@@ -6,10 +6,11 @@ using UnityEngine;
 [SelectionBase]
 public class MovingPlatform : MonoBehaviour {
 
-    public Vector3[] path = new Vector3[0];
+    [SerializeField]
+    public List<Vector3> path = new List<Vector3>();
     [Range(0, 20)]
     public float duration = 5;
-    [Range(0, 20)]
+    [Range(0, 1)]
     public float startPercent = 0;
     public bool syncDist = true;
     public bool isPaused = false;
@@ -18,19 +19,30 @@ public class MovingPlatform : MonoBehaviour {
     // public float spinSpeed = 0;
     public Vector3 spinEuler = Vector3.zero;
 
+    [Space]
     public Tween moveTween;
     public Tween spinTween;
 
+
     void Start() {
         DOTween.defaultUpdateType = UpdateType.Fixed;
-        if (path.Length > 1) {
+        if (path.Count > 1 && transform.childCount > 0) {
+            if (path.Count == 2) {
+                isOpen = true;
+            }
             if (!isOpen) {
-                var v1 = new List<Vector3>(path);
-                v1.Add(v1[0]);
-                path = v1.ToArray();
+                path.Add(path[0]);
             }
             // path[0] = transform.position;
-            moveTween = transform.DOPath(path, duration);
+            // Transform newparent = new GameObject(name+" holder").transform;
+            // newparent.parent = transform.parent;
+            // newparent.position = transform.position;
+            // newparent.rotation = transform.rotation;
+            // transform.parent = newparent;
+            // transform.localPosition = Vector3.zero;
+            // transform.localRotation = Quaternion.identity;
+
+            moveTween = transform.GetChild(0).DOLocalPath(path.ToArray(), duration);
             if (syncDist) {
                 // moveTween.PathLength
             }
@@ -42,11 +54,11 @@ public class MovingPlatform : MonoBehaviour {
                 // moveTween.SetEase(Ease.InOutCubic);
                 moveTween.SetEase(easeType);
             }
-            moveTween.Goto(startPercent);
+            moveTween.Goto(startPercent * duration);
         }
         if (spinEuler.sqrMagnitude != 0) {
             // Debug.Log("starting spin! " + gameObject.name);
-            spinTween = transform.DOLocalRotate(spinEuler, duration);
+            spinTween = transform.GetChild(0).DOLocalRotate(spinEuler, duration);
             spinTween.SetLoops(-1, LoopType.Incremental);
             spinTween.SetEase(Ease.Linear);
         }

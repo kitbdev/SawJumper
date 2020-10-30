@@ -305,7 +305,7 @@ MonoBehaviour:
   turnSpeed: 10
   jumpDist: 4
   jumpHeight: 1
-  jumpDistMin: 2
+  jumpDistMin: 1
   jumpHeightMin: 0.5
   maxJumps: 1
   coyoteTimeDur: 0.2

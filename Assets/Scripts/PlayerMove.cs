@@ -147,10 +147,13 @@ public class PlayerMove : MonoBehaviour {
         state = MoveState.falling;
         vel = Vector3.zero;
         health.SetHealth();
-        // todo move last respawn point
-        // based on level? or dynamically to last (non moving) platform we were on?
         transform.position = lastRespawnT.position;
         transform.rotation = lastRespawnT.rotation;
+    }
+    public void SetRespawnPoint(Transform point) {
+        // based on level? or dynamically to last (non moving) platform we were on?
+        lastRespawnT.position = point.position;
+        lastRespawnT.rotation = point.rotation;
     }
 
     [ContextMenu("Recalc Jump")]
@@ -284,7 +287,7 @@ public class PlayerMove : MonoBehaviour {
         vel += Vector3.down * grav * Time.deltaTime;
 
         bool inputJump = inpjumpHold && inpIntraJumpRelease;
-        if (inputJump && !inLockedStates) {
+        if (inpjumpHold && !inLockedStates) {
             // check climbing
             // wall raycast
             RaycastHit hitWall, hitTop;
@@ -315,11 +318,11 @@ public class PlayerMove : MonoBehaviour {
                     if (!Physics.CheckCapsule(capsuleStartHeightC, capsuleEndHeightC, colRad, playerColMask)) {
                         // can climb!
                         float relHeight = hitTop.point.y - transform.position.y;
-                        Debug.Log("Climbing " + hitWall.collider.name + " h:" + relHeight);
+                        // Debug.Log("Climbing " + hitWall.collider.name + " h:" + relHeight);
                         state = MoveState.climbing;
                         climbLanding.position = climbToPos;
                         climbLanding.forward = wallRayDir;
-                        // for moving platforms
+                        // for moving platforms?
                         climbLanding.parent = hitTop.transform;
                         vel = Vector3.zero;
 
@@ -360,7 +363,7 @@ public class PlayerMove : MonoBehaviour {
             UpdateConnectedPos();
             Vector3 rotVel = connectedLPos - lastLPos;
             rotVel /= Time.deltaTime;
-            Debug.Log($"conVel: {connectedVel} conrot: {rotVel}");
+            // Debug.Log($"conVel: {connectedVel} conrot: {rotVel}");
             vel += connectedVel; // + rotVel;
         }
 

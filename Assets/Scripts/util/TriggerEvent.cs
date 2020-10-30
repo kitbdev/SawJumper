@@ -11,9 +11,13 @@ public class TriggerEvent : MonoBehaviour {
     public bool beenHit = false;
     float lastInteractTime = 0;
     public string tagInteract = "Player";
+    public LayerMask layerInteract = 1;
     public int addScore = 0;
     public string gameManagerFunctionCall = "";
     public int gameManagerFunctionCallInt = -2;
+    public GameObject spawnObject;
+    public string spawnObjectCall = "";
+    public string playerCall = "";
 
     public UnityEvent triggeredEnterEvent;
     public UnityEvent triggeredRepEvent;
@@ -45,7 +49,7 @@ public class TriggerEvent : MonoBehaviour {
         lastInteractTime = Time.time;
     }
     private void OnTriggerEnter(Collider other) {
-        if (!(oneTime && beenHit) && other.CompareTag(tagInteract)) {
+        if (!(oneTime && beenHit) && (layerInteract & (1 << other.gameObject.layer)) != 0 && (tagInteract != "" ? other.CompareTag(tagInteract) : true)) {
             triggeredEnterEvent.Invoke();
             if (gameManagerFunctionCall != "") {
                 if (gameManagerFunctionCallInt != -2) {
@@ -63,12 +67,12 @@ public class TriggerEvent : MonoBehaviour {
         }
     }
     private void OnTriggerStay(Collider other) {
-        if (other.CompareTag(tagInteract)) {
+        if ((layerInteract & (1 << other.gameObject.layer)) != 0 && (tagInteract != "" ? other.CompareTag(tagInteract) : true)) {
             Interacted();
         }
     }
     private void OnTriggerExit(Collider other) {
-        if (!(oneTime && beenHit) && other.CompareTag(tagInteract)) {
+        if (!(oneTime && beenHit) && (layerInteract & (1 << other.gameObject.layer)) != 0 && (tagInteract != "" ? other.CompareTag(tagInteract) : true)) {
             triggeredExitEvent.Invoke();
             beenHit = true;
         }
