@@ -6,9 +6,27 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/test.unity
+    path: Assets/aScenes/mainmenu.unity
+    guid: e3a637514ce5c564c9f678194105a2fe
+  - enabled: 1
+    path: Assets/aScenes/keepscene.unity
+    guid: 8728114c715eda7438bb4fda722f91bc
+  - enabled: 0
+    path: Assets/aScenes/test.unity
     guid: d1c3109bdb54ad54c8a2b2838528e640
   - enabled: 1
-    path: Assets/Scenes/keepscene.unity
-    guid: 8728114c715eda7438bb4fda722f91bc
+    path: Assets/aScenes/beginer.unity
+    guid: ab56975890ded1248a22a457f8a8286d
+  - enabled: 1
+    path: Assets/aScenes/movp1.unity
+    guid: 26df0eb101b3bc443bf1ad30da1efc02
+  - enabled: 1
+    path: Assets/aScenes/bigroom.unity
+    guid: 07884a5be7e713c4ead5f905808b1712
+  - enabled: 1
+    path: Assets/aScenes/platformingfun.unity
+    guid: 8d459a43d7a5d4b4989a4444f294de15
+  - enabled: 1
+    path: Assets/aScenes/tower.unity
+    guid: 983002056f4c4024ab164f507d78faf3
   m_configObjects: {}

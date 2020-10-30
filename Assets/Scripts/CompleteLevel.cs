@@ -4,8 +4,6 @@ using Cinemachine;
 using UnityEngine;
 
 public class CompleteLevel : MonoBehaviour {
-    
-    public Transform target;
 
     GameManager gm;
 
@@ -16,7 +14,7 @@ public class CompleteLevel : MonoBehaviour {
     
     private void OnTriggerEnter(Collider other) {
         // ready to be interacted with, show prompt
-        if (other.CompareTag("Player")) {
+        if (other.transform.parent && other.transform.parent.CompareTag("Player")) {
             gm.NextLevel();
             // other.GetComponentInParent<PlayerMove>().SetInteractable(this);
         }

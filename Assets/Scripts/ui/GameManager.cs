@@ -7,7 +7,8 @@ using UnityEngine.SceneManagement;
 public class GameManager : MonoBehaviour {
 
     // stores gamestate and stuff
-    Transform playert;
+    Elevator elev;
+    PlayerMove player;
     [Space]
     public int level = 0;
     public int curScene = 1;
@@ -16,6 +17,8 @@ public class GameManager : MonoBehaviour {
     public float sceneLoadProgress = 0;
 
     void Start() {
+        elev = GameObject.FindGameObjectWithTag("Elevator").GetComponent<Elevator>();
+        player = GameObject.FindGameObjectWithTag("Player").GetComponent<PlayerMove>();
         // loadingScene = false;
         if (SceneManager.sceneCount < 2) {
             // Scene Load order:
@@ -29,6 +32,9 @@ public class GameManager : MonoBehaviour {
     void Update() {
 
     }
+    public void BackToMainMenu() {
+        SceneManager.LoadScene(0);
+    }
     public void NextLevel() {
         if (curScene < SceneManager.sceneCountInBuildSettings) {
             // load next scene
@@ -38,6 +44,9 @@ public class GameManager : MonoBehaviour {
         }
     }
     public void RestartLevel() {
+        elev.CloseDoors();
+        player.SetRespawnPoint(elev.transform);
+        player.Respawn();
         StartCoroutine(LoadNewScene(curScene));
     }
     public UnityEvent loadStartEvent;
@@ -49,6 +58,7 @@ public class GameManager : MonoBehaviour {
         } else {
             loadingScene = true;
             loadStartEvent.Invoke();
+            level = newScene - 2;
             if (!onlyLoad) {
                 Debug.Log("Unloading scene " + curScene + "...");
                 AsyncOperation unload = SceneManager.UnloadSceneAsync(curScene);
@@ -64,8 +74,9 @@ public class GameManager : MonoBehaviour {
                 yield return null;
             }
             curScene = newScene;
-            level = curScene - 2;
             loadingScene = false;
+            player.SetRespawnPoint(elev.transform);
+            elev.Land();
         }
     }
     public void AddScore(int amount) {

@@ -102,6 +102,7 @@ public class MovingPlatformEditor : Editor {
         if (Application.isPlaying || movingPlatform.path.Count == 0) {
             return;
         }
+        movingPlatform = (MovingPlatform) target;
         // if (movingPlatform.path.Count > 1) {
         //     Handles.color = Color.black;
         //     Handles.DrawDottedLines(movingPlatform.path, 10);

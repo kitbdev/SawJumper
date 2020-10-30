@@ -196,17 +196,22 @@ public class PlayerMove : MonoBehaviour {
     void FixedUpdate() {
         CheckGrounded();
         // movement
+        bool inLockedStates = state == MoveState.climbing || state == MoveState.dead;
+        
         float grav = fallGravity;
         Vector3 inputVel = new Vector3(inpvel.x, 0, inpvel.y);
         Vector3 moveVel = Vector3.zero;
         bool anyMovement = inputVel.sqrMagnitude > 0.01f;
+        if (inLockedStates) {
+            anyMovement = false;
+            vel = Vector3.zero;
+        }
         if (anyMovement) {
             inputVel = cam.TransformDirection(inputVel);
             inputVel.y = 0;
         } else {
             inputVel = Vector3.zero;
         }
-        bool inLockedStates = state == MoveState.climbing || state == MoveState.dead;
         if (isGrounded && (state == MoveState.idle || state == MoveState.walking || state == MoveState.falling)) {
             if (anyMovement) {
                 state = MoveState.walking;
@@ -271,8 +276,7 @@ public class PlayerMove : MonoBehaviour {
             case MoveState.dead:
                 grav = 0;
                 moveVel = Vector3.zero;
-                // respawn timer
-                // Respawn();
+                // vel = Vector3.zero;
                 break;
             case MoveState.frozen:
 

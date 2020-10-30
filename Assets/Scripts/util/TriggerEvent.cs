@@ -13,11 +13,11 @@ public class TriggerEvent : MonoBehaviour {
     public string tagInteract = "Player";
     public LayerMask layerInteract = 1;
     public int addScore = 0;
-    public string gameManagerFunctionCall = "";
-    public int gameManagerFunctionCallInt = -2;
-    public GameObject spawnObject;
-    public string spawnObjectCall = "";
-    public string playerCall = "";
+    // public string gameManagerFunctionCall = "";
+    // public int gameManagerFunctionCallInt = -2;
+    // public GameObject spawnObject;
+    // public string spawnObjectCall = "";
+    // public string playerCall = "";
 
     public UnityEvent triggeredEnterEvent;
     public UnityEvent triggeredRepEvent;
@@ -51,13 +51,13 @@ public class TriggerEvent : MonoBehaviour {
     private void OnTriggerEnter(Collider other) {
         if (!(oneTime && beenHit) && (layerInteract & (1 << other.gameObject.layer)) != 0 && (tagInteract != "" ? other.CompareTag(tagInteract) : true)) {
             triggeredEnterEvent.Invoke();
-            if (gameManagerFunctionCall != "") {
-                if (gameManagerFunctionCallInt != -2) {
-                    gm.SendMessage(gameManagerFunctionCall, gameManagerFunctionCallInt);
-                } else {
-                    gm.SendMessage(gameManagerFunctionCall);
-                }
-            }
+            // if (gameManagerFunctionCall != "") {
+            //     if (gameManagerFunctionCallInt != -2) {
+            //         gm.SendMessage(gameManagerFunctionCall, gameManagerFunctionCallInt);
+            //     } else {
+            //         gm.SendMessage(gameManagerFunctionCall);
+            //     }
+            // }
             if (addScore != 0) {
                 gm.AddScore(addScore);
             }
