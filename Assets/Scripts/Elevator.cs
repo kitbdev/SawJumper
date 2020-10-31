@@ -30,6 +30,7 @@ public class Elevator : MonoBehaviour {
         anim = GetComponent<Animation>();
         audioSource = GetComponent<AudioSource>();
         defLayer = gameObject.layer;
+        player = GameObject.FindGameObjectWithTag("Player").transform;
         UpdateUI();
     }
     private void Update() {

@@ -120,14 +120,17 @@ public class PlayerMove : MonoBehaviour {
         state = MoveState.falling;
         CalcJump();
 
-        climbLanding = new GameObject().transform;
-        climbLanding.parent = transform;
-        climbLanding.name = "Climbing helper";
-        climbLanding.localPosition = Vector3.zero;
+        MakeClimbHelper();
         lastRespawnT = new GameObject().transform;
         lastRespawnT.name = "Respawn Point";
         lastRespawnT.parent = gm.transform;
         lastRespawnT.position = Vector3.zero;
+    }
+    void MakeClimbHelper() {
+        climbLanding = new GameObject().transform;
+        climbLanding.parent = transform;
+        climbLanding.name = "Climbing helper";
+        climbLanding.localPosition = Vector3.zero;
     }
     private void OnEnable() {
         controls.Enable();
@@ -209,7 +212,7 @@ public class PlayerMove : MonoBehaviour {
             float turnAmount = inplook.x;
             transform.Rotate(0, turnAmount * lockTurnSpeed * Time.deltaTime, 0);
         } else {
-            if (vel.sqrMagnitude > 0.01f) {
+            if (vel.sqrMagnitude > 0.01f && inpvel.sqrMagnitude > 0.01f) {
                 Vector3 flatVel = vel;
                 flatVel.y = 0;
                 float ang = Mathf.LerpAngle(0, Vector3.SignedAngle(transform.forward, flatVel, Vector3.up), turnSpeed * Time.deltaTime);
@@ -351,6 +354,9 @@ public class PlayerMove : MonoBehaviour {
                         float relHeight = hitTop.point.y - transform.position.y;
                         // Debug.Log("Climbing " + hitWall.collider.name + " h:" + relHeight);
                         state = MoveState.climbing;
+                        if (!climbLanding) {
+                            MakeClimbHelper();
+                        }
                         climbLanding.position = climbToPos;
                         climbLanding.forward = wallRayDir;
                         // for moving platforms?
@@ -388,7 +394,7 @@ public class PlayerMove : MonoBehaviour {
             audioSource.PlayOneShot(jumpClip);
         }
         // moving platforms
-        if (connectedBody) {
+        if (connectedBody && !inLockedStates) {
             Vector3 connectedVel = connectedBody.transform.position - connectedGPos;
             connectedVel /= Time.deltaTime;
             Vector3 lastLPos = connectedLPos;
@@ -408,11 +414,17 @@ public class PlayerMove : MonoBehaviour {
     }
     public void ClimbRepos() {
         // state = MoveState.falling;
+        if (!climbLanding) {
+            MakeClimbHelper();
+        }
         transform.position = climbLanding.position;
         transform.rotation = climbLanding.rotation;
     }
     public void FinishClimb() {
         state = MoveState.falling;
+        if (!climbLanding) {
+            MakeClimbHelper();
+        }
         transform.position = climbLanding.position;
         transform.rotation = climbLanding.rotation;
     }
@@ -450,7 +462,11 @@ public class PlayerMove : MonoBehaviour {
             float updot = Vector3.Dot(cp.normal, Vector3.up);
             if (updot >= 0.7f) {
                 isGrounded = true;
-                connectedBody = cp.otherCollider.attachedRigidbody;
+                if (cp.otherCollider) {
+                    connectedBody = cp.otherCollider.attachedRigidbody;
+                } else {
+                    connectedBody = null;
+                }
                 break;
             } else if (updot > -0.7f) {
                 // hit a wall

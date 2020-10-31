@@ -192,7 +192,7 @@
                     "id": "c1f7a91b-d0fd-4a62-997e-7fb9b69bf235",
                     "path": "<Gamepad>/rightStick",
                     "interactions": "",
-                    "processors": "",
+                    "processors": "ScaleVector2(x=2,y=2)",
                     "groups": ";Gamepad",
                     "action": "Look",
                     "isComposite": false,
@@ -512,6 +512,14 @@
                     "type": "PassThrough",
                     "id": "97a5807a-3553-4150-9918-9f284385b212",
                     "expectedControlType": "Quaternion",
+                    "processors": "",
+                    "interactions": ""
+                },
+                {
+                    "name": "pause",
+                    "type": "Button",
+                    "id": "a61f6545-57b1-438e-9999-08c67182d345",
+                    "expectedControlType": "Button",
                     "processors": "",
                     "interactions": ""
                 }
@@ -932,6 +940,28 @@
                     "processors": "",
                     "groups": "XR",
                     "action": "TrackedDeviceOrientation",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "bb4d87ba-40f3-4541-ad62-a816e6dc7cba",
+                    "path": "<Gamepad>/start",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Gamepad",
+                    "action": "pause",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "91061733-7842-499d-ad23-b6ef4680184d",
+                    "path": "<Keyboard>/escape",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "pause",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

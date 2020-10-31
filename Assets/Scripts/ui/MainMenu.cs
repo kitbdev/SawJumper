@@ -20,14 +20,14 @@ public class MainMenu : MonoBehaviour {
 
     void Start() {
         canQuit = false;
-#if UNITY_PLAYER
+// #if UNITY_PLAYER
+//         canQuit = true;
+// #elif UNITY_EDITOR
         canQuit = true;
-#elif UNITY_EDITOR
-        canQuit = true;
-#endif
-        if (!canQuit) {
-            quitbtn.SetActive(false);
-        }
+// #endif
+        // if (!canQuit) {
+        //     quitbtn.SetActive(false);
+        // }
         curMenuG = mainMenuG;
         SwitchTo(mainMenuG);
         levelPicker.text = levelId + "";
@@ -68,6 +68,9 @@ public class MainMenu : MonoBehaviour {
     }
     public void Optionbtn() {
         // ? or in unity event
+    }
+    public void ToggleFullscreen() {
+        Screen.fullScreen = !Screen.fullScreen;
     }
     public void Exitbtn() {
         Application.Quit();

@@ -10,20 +10,26 @@ public class PauseMenu : MonoBehaviour {
     public GameObject skipButton;
     public bool paused = false;
 
-    private void Awake() {
+    public InputActionReference pausebtn;
+    // GameManager gm;
+
+    void Awake() {
+        pausebtn.action.Enable();
+        pausebtn.action.performed += c => TogglePaused();
+        // pausebtn.action.canceled += c => ();
         SetPaused(paused);
         skipButton.SetActive(false);
     }
     private void Update() {
-        if (Keyboard.current.escapeKey.wasPressedThisFrame) {
-            TogglePaused();
-        }
-        if (Keyboard.current.mKey.wasPressedThisFrame) {
-            SetPaused(false);
-        }
-        if (Keyboard.current.pKey.wasPressedThisFrame) {
-            SetPaused(true);
-        }
+        // if (Keyboard.current.escapeKey.wasPressedThisFrame) {
+        //     TogglePaused();
+        // }
+        // if (Keyboard.current.mKey.wasPressedThisFrame) {
+        //     SetPaused(false);
+        // }
+        // if (Keyboard.current.pKey.wasPressedThisFrame) {
+        //     SetPaused(true);
+        // }
         if (Keyboard.current.endKey.wasPressedThisFrame) {
             skipButton.SetActive(!skipButton.activeSelf);
         }

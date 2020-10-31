@@ -1,3 +1,17 @@
+description
+Saw Jumper is a 3D platformer.
+Use moving platforms to navigate your way to the end and avoid the dangerous saw blades.
+
+controls:
+mouse - look
+wasd - move
+space - dash jump, climb
+shift - center camera
+
+Includes dangerous saw blades, moving platforms, saw blades
+
+
+
 credits
 by Kit Bishop
 
