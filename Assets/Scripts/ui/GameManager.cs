@@ -20,6 +20,7 @@ public class GameManager : MonoBehaviour {
         elev = GameObject.FindGameObjectWithTag("Elevator").GetComponent<Elevator>();
         player = GameObject.FindGameObjectWithTag("Player").GetComponent<PlayerMove>();
         // loadingScene = false;
+        curScene = 2;
         if (SceneManager.sceneCount < 2) {
             // Scene Load order:
             //  main menu(0) -> play loads keepscene(1)
@@ -29,9 +30,9 @@ public class GameManager : MonoBehaviour {
         }
     }
 
-    void Update() {
+    // void Update() {
 
-    }
+    // }
     public void BackToMainMenu() {
         SceneManager.LoadScene(0);
     }
@@ -51,7 +52,7 @@ public class GameManager : MonoBehaviour {
     }
     public UnityEvent loadStartEvent;
     IEnumerator LoadNewScene(int newScene, bool onlyLoad = false) {
-        if (newScene < SceneManager.sceneCountInBuildSettings || newScene <= 0) {
+        if (newScene >= SceneManager.sceneCountInBuildSettings || newScene <= 1) {
             Debug.LogWarning("Invalid scene to load " + newScene);
         } else if (loadingScene) {
             Debug.Log("Already loading a scene! tried:" + newScene);
@@ -68,7 +69,7 @@ public class GameManager : MonoBehaviour {
                 }
             }
             Debug.Log("Loading scene " + newScene + "...");
-            AsyncOperation load = SceneManager.LoadSceneAsync(newScene);
+            AsyncOperation load = SceneManager.LoadSceneAsync(newScene, LoadSceneMode.Additive);
             while (!load.isDone) {
                 sceneLoadProgress = load.progress;
                 yield return null;

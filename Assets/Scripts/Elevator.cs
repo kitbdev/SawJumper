@@ -8,6 +8,8 @@ public class Elevator : MonoBehaviour {
 
     public float callSpeed = 1;
     public float callHeight = 10;
+    public LayerMask movingLayer = 1<<14;
+    LayerMask defLayer;
     public AnimationClip openDoorClip;
     public AnimationClip closeDoorClip;
     public AnimationClip moveSimClip;
@@ -16,6 +18,7 @@ public class Elevator : MonoBehaviour {
     public AudioClip moveSfx;
     Vector3 curPos;
     Transform player;
+    bool isMoving = false;
 
     AudioSource audioS;
     Animation anim;
@@ -25,7 +28,13 @@ public class Elevator : MonoBehaviour {
         gm = GameObject.FindGameObjectWithTag("GameController").GetComponent<GameManager>();
         anim = GetComponent<Animation>();
         audioS = GetComponent<AudioSource>();
+        defLayer = gameObject.layer;
         UpdateUI();
+    }
+    private void Update() {
+        if (isMoving) {
+            UpdateUI();
+        }
     }
     public void UpdateUI() {
         // gm.sceneLoadProgress
@@ -35,6 +44,7 @@ public class Elevator : MonoBehaviour {
             // already here
             return;
         }
+        curPos = tot.position;
         transform.position = tot.position + Vector3.up * callHeight;
         transform.rotation = tot.rotation;
         // do anim
@@ -43,6 +53,8 @@ public class Elevator : MonoBehaviour {
         t.SetEase(Ease.OutCubic);
         t.Play();
         t.onComplete += () => LandComplete();
+        isMoving = true;
+        // gameObject.layer = movingLayer;
     }
     public void Land() {
         Transform newT = GameObject.FindGameObjectWithTag("StartPos").transform;
@@ -50,17 +62,24 @@ public class Elevator : MonoBehaviour {
             Debug.LogWarning("Can't find where to start!");
             newT = gm.transform;
         }
-        transform.position = newT.position + Vector3.down * callHeight/2;
+        curPos = newT.position;
+        transform.position = newT.position;
+        // transform.position = newT.position + Vector3.down * callHeight/2;
         transform.rotation = newT.rotation;
         // do anim
-        Tween t = transform.DOMoveY(transform.position.y, callSpeed/2);
-        t.SetLoops(0);
-        t.SetEase(Ease.OutCubic);
-        t.Play();
-        t.onComplete += () => LandComplete();
+        // Tween t = transform.DOMoveY(transform.position.y, callSpeed/2);
+        // t.SetLoops(0);
+        // t.SetEase(Ease.OutCubic);
+        // t.Play();
+        // t.onComplete += () => LandComplete();
+        // isMoving = true;
+        // gameObject.layer = movingLayer;
+        LandComplete();
     }
     void LandComplete() {
         OpenDoors();
+        isMoving = false;
+        gameObject.layer = defLayer;
     }
     void PlayerIn() {
         CloseDoors();

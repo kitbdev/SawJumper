@@ -9,6 +9,7 @@ public struct Settings {
     public float sfxVol;
     public bool camAuto;
     public bool fullscreen;
+    public bool invertY;
 }
 public class OptionMenu : MonoBehaviour {
 

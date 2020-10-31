@@ -8,34 +8,22 @@ public class CamRecenterV2 : MonoBehaviour {
 
     public InputActionReference recenterButton;
     public Transform PlayerT;
-    // CinemachineFreeLook freeLook;
+    public CinemachineFreeLook freeLook;
     // GameManager gm;
+    float recenterTime = 0;
     InputAction action;
     Controls controls;
     public bool recentering = false;
 
     void Awake() {
         recentering = false;
-        // freeLook = GetComponent<CinemachineFreeLook>();
-        // controls = new Controls();
-        // action = recenterButton.ToInputAction();
-        // controls.Enable();
-        // controls.Player.Recenter.performed += c => Recenter();
-        // controls.Player.Recenter.cancelled += c => RecenterStop();
-        // action.actionMap.Enable();
-        // Debug.Log("rac:"+action+" "+action.id+" ."+recenterButton);
         recenterButton.action.Enable();
         recenterButton.action.performed += c => Recenter();
         recenterButton.action.canceled += c => RecenterStop();
     }
-    // private void OnEnable() {
-    //     controls.Enable();
-    // }
-    // private void OnDisable() {
-    //     controls.Disable();
-    // }
     private void LateUpdate() {
         if (recentering) {
+            freeLook.m_XAxis.Value = 0;
             transform.rotation = PlayerT.transform.rotation;
         }
     }
@@ -45,11 +33,18 @@ public class CamRecenterV2 : MonoBehaviour {
         // freeLook.m_RecenterToTargetHeading.m_enabled = true;
         // freeLook.m_RecenterToTargetHeading.RecenterNow();
         // Invoke("UnRecenter", freeLook.m_RecenterToTargetHeading.m_RecenteringTime + 0.1f);
+        recenterTime = Time.time;
     }
     void UnRecenter() {
         // freeLook.m_RecenterToTargetHeading.m_enabled = false;
+        recentering = false;
     }
     void RecenterStop() {
-        recentering = false;
+        float tdif = Time.time - recenterTime;
+        if (tdif < 0.1f && tdif > 0) {
+            Invoke("Unrecenter",tdif);
+        } else {
+            UnRecenter();
+        }
     }
 }

@@ -68,6 +68,10 @@ public class MovingPlatform : MonoBehaviour {
             ResumeMovement();
         }
     }
+    private void OnDisable() {
+        if (moveTween != null) moveTween.Kill();
+        if (spinTween != null) spinTween.Kill();
+    }
 
     public void PauseMovement() {
         isPaused = true;

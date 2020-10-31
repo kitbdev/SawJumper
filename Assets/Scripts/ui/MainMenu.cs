@@ -6,15 +6,31 @@ using UnityEngine.UI;
 
 public class MainMenu : MonoBehaviour {
 
-    public bool hasSave = false;
+    public GameObject quitbtn;
+    public GameObject loadbtn;
+    public Text levelPicker;
+    public CanvasGroup mainMenuG;
+    public CanvasGroup optionsMenuG;
+    public CanvasGroup pauseMenuG;
+    [Space]
+    public CanvasGroup curMenuG;
     public int levelId = 0;
     public bool canQuit = false;
+    public bool hasSave = false;
 
     void Start() {
         canQuit = false;
 #if UNITY_PLAYER
         canQuit = true;
+#elif UNITY_EDITOR
+        canQuit = true;
 #endif
+        if (!canQuit) {
+            quitbtn.SetActive(false);
+        }
+        curMenuG = mainMenuG;
+        SwitchTo(mainMenuG);
+        levelPicker.text = levelId + "";
         TryLoadGame();
     }
     void SaveGame() {
@@ -31,7 +47,24 @@ public class MainMenu : MonoBehaviour {
     }
     public void ContinuePlaybtn() {
         // SceneManager.LoadScene(2+levelId);
-
+    }
+    public void LoadLevelbtn() {
+        SceneManager.LoadScene(2 + levelId);
+    }
+    public void IncLevelbtn(bool neg = false) {
+        levelId += neg? - 1 : 1;
+        levelId = Mathf.Clamp(levelId, 0, SceneManager.sceneCountInBuildSettings - 2);
+        levelPicker.text = levelId + "";
+    }
+    public void SwitchTo(CanvasGroup menu) {
+        curMenuG.alpha = 0;
+        curMenuG.interactable = false;
+        curMenuG.blocksRaycasts = false;
+        curMenuG = menu;
+        // todo animate
+        curMenuG.alpha = 1;
+        curMenuG.interactable = true;
+        curMenuG.blocksRaycasts = true;
     }
     public void Optionbtn() {
         // ? or in unity event

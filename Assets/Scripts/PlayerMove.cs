@@ -25,6 +25,7 @@ public class PlayerMove : MonoBehaviour {
     public float airMoveSpeed = 5;
     public float jumpMoveSpeed = 20;
     public float turnSpeed = 4;
+    public float lockTurnSpeed = 2;
 
     [Header("Distances")]
     public float jumpDist = 4;
@@ -73,6 +74,7 @@ public class PlayerMove : MonoBehaviour {
     public Vector3 connectedLPos;
     public Interactable nearInteractable;
     List<ContactPoint> curCps = new List<ContactPoint>();
+    public bool camLocked = false;
 
     // input stuff
     Controls controls;
@@ -100,8 +102,10 @@ public class PlayerMove : MonoBehaviour {
         controls.Player.Interact.performed += c => TryInteract();
         controls.Player.Look.performed += c => inplook = c.ReadValue<Vector2>();
         controls.Player.Look.canceled += c => inplook = Vector2.zero;
+        controls.Player.Recenter.performed += c => camLocked = true;
+        controls.Player.Recenter.canceled += c => camLocked = false;
         inpIntraJumpRelease = true;
-
+        camLocked = false;
     }
     private void Start() {
         state = MoveState.falling;
@@ -183,21 +187,26 @@ public class PlayerMove : MonoBehaviour {
         // followTarg.rotation *= Quaternion.AngleAxis(inplook.x * turnSpeed * Time.deltaTime, Vector3.up);
 
         // rotate while moving
-        if (vel.sqrMagnitude > 0.01f) {
-            Vector3 flatVel = vel;
-            flatVel.y = 0;
-            float ang = Mathf.LerpAngle(0, Vector3.SignedAngle(transform.forward, flatVel, Vector3.up), turnSpeed * Time.deltaTime);
-            transform.rotation *= Quaternion.AngleAxis(ang, Vector3.up);
-            anim.SetFloat("turn", ang);
+        if (camLocked) {
+            float turnAmount = inplook.x;
+            transform.Rotate(0, turnAmount * lockTurnSpeed * Time.deltaTime, 0);
         } else {
-            anim.SetFloat("turn", 0);
+            if (vel.sqrMagnitude > 0.01f) {
+                Vector3 flatVel = vel;
+                flatVel.y = 0;
+                float ang = Mathf.LerpAngle(0, Vector3.SignedAngle(transform.forward, flatVel, Vector3.up), turnSpeed * Time.deltaTime);
+                transform.rotation *= Quaternion.AngleAxis(ang, Vector3.up);
+                anim.SetFloat("turn", ang);
+            } else {
+                anim.SetFloat("turn", 0);
+            }
         }
     }
     void FixedUpdate() {
         CheckGrounded();
         // movement
         bool inLockedStates = state == MoveState.climbing || state == MoveState.dead;
-        
+
         float grav = fallGravity;
         Vector3 inputVel = new Vector3(inpvel.x, 0, inpvel.y);
         Vector3 moveVel = Vector3.zero;
