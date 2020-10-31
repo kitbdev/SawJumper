@@ -27,6 +27,8 @@ public class GameManager : MonoBehaviour {
             //  keepscene(1) this -> additivly loads the respective level (2+,l0+)
             // SceneManager.GetActiveScene().buildIndex;
             StartCoroutine(LoadNewScene(curScene, true));
+        } else {
+            elev.Land();
         }
     }
 
@@ -76,11 +78,17 @@ public class GameManager : MonoBehaviour {
             }
             curScene = newScene;
             loadingScene = false;
-            player.SetRespawnPoint(elev.transform);
             elev.Land();
+            player.SetRespawnPoint(elev.transform);
         }
     }
     public void AddScore(int amount) {
         points += amount;
+    }
+    public void Win() {
+        var wingo =  GameObject.FindGameObjectWithTag("winner");
+        if (wingo) {
+            wingo.SetActive(true);
+        }
     }
 }

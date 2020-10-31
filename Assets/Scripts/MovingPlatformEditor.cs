@@ -13,6 +13,7 @@ public class MovingPlatformEditor : Editor {
     Quaternion lastRot = Quaternion.identity;
     int physBounces = 2;
     float physRad = 0.5f;
+    bool showDistances = true;
 
     void OnEnable() {
         movingPlatform = (MovingPlatform) target;
@@ -55,7 +56,7 @@ public class MovingPlatformEditor : Editor {
         if (GUILayout.Button("Snap Points")) {
             if (movingPlatform.path.Count > 1) {
                 Undo.RecordObject(movingPlatform, "Snap points");
-                movingPlatform.path[0].Set(0,0,0);
+                movingPlatform.path[0].Set(0, 0, 0);
                 for (int i = 0; i < movingPlatform.path.Count; i++) {
                     var pos = movingPlatform.path[i];
                     if (!moveRel) {
@@ -74,12 +75,13 @@ public class MovingPlatformEditor : Editor {
         physBounces = EditorGUILayout.IntField("Physics Sim Bounces", physBounces);
         physRad = EditorGUILayout.FloatField("Phys Radius", physRad);
         // if (physBounces != wasphysBounces) {
-             
+
         // }
         if (physBounces > 0 && GUILayout.Button("Physics Sim")) {
             RecalcPhys();
         }
         // bool guiClosed = GUILayout.Toggle(movingPlatform.isOpen, "Open Loop");
+        showDistances = GUILayout.Toggle(showDistances, "Show Distances");
         var wasmoverel = moveRel;
         moveRel = GUILayout.Toggle(moveRel, "Relative Movement");
         if (moveRel && !wasmoverel) {
@@ -123,6 +125,35 @@ public class MovingPlatformEditor : Editor {
                     movingPlatform.path[i] = movingPlatform.transform.InverseTransformPoint(npos);
                 }
             }
+        }
+        if (showDistances) {
+            float totalDist = 0;
+            for (int i = 1; i < movingPlatform.path.Count; i++) {
+                Vector3 pos = movingPlatform.path[i];
+                Vector3 prevpos = movingPlatform.path[i - 1];
+                float dist = Vector3.Distance(prevpos, pos);
+                totalDist += dist;
+            }
+            if (!movingPlatform.isOpen && movingPlatform.path.Count > 2) {
+                totalDist += Vector3.Distance(movingPlatform.path[0], movingPlatform.path[movingPlatform.path.Count - 1]);
+            }
+            float runDist = 0;
+            for (int i = 1; i < movingPlatform.path.Count; i++) {
+                Vector3 pos = movingPlatform.path[i];
+                Vector3 prevpos = movingPlatform.path[i - 1];
+                float dist = Vector3.Distance(prevpos, pos);
+                runDist += dist;
+                float perc = runDist / totalDist;
+                float time = movingPlatform.duration * perc;
+                string label = $"{dist:F3}m\n{perc:F3}%-{1-perc:F3}%\n{time:F3}s";
+                // string label = dist + "m \n" + (perc) + "% \n" + time + " s";
+                Vector3 labelPos = movingPlatform.transform.TransformPoint(pos);
+                // labelPos += Vector3.up * 0.5f;
+                Handles.Label(labelPos, label);
+            }
+            Vector3 labelPos0 = movingPlatform.transform.TransformPoint(movingPlatform.path[0]);
+            // labelPos0 += Vector3.up * 0.5f;
+            Handles.Label(labelPos0, $"0m/{totalDist}m\n{totalDist/movingPlatform.duration:F3}m/s\n0s/{movingPlatform.duration}s");
         }
         // if (physBounces>0 && !Application.isPlaying) {
 
@@ -185,7 +216,7 @@ public class MovingPlatformEditor : Editor {
         //     Gizmos.color = Color.black;
         // Debug.Log(mp.name + " " + gizmoType.ToString());
         if ((gizmoType & GizmoType.NonSelected) != 0) {
-            Gizmos.color = Color.black;
+            Gizmos.color = Color.gray;
             rad = 0.2f;
         }
         for (int i = 0; i < mp.path.Count; i++) {
@@ -204,7 +235,7 @@ public class MovingPlatformEditor : Editor {
             var to = mp.transform.TransformPoint(mp.path[mp.path.Count - 1]);
             Gizmos.DrawLine(from, to);
         }
-        if (mp.spinEuler!=Vector3.zero) {
+        if (mp.spinEuler != Vector3.zero) {
             Gizmos.DrawWireSphere(mp.transform.position, 1);
         }
     }

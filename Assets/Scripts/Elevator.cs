@@ -8,7 +8,7 @@ public class Elevator : MonoBehaviour {
 
     public float callSpeed = 1;
     public float callHeight = 10;
-    public LayerMask movingLayer = 1<<14;
+    public LayerMask movingLayer = 1 << 14;
     LayerMask defLayer;
     public AnimationClip openDoorClip;
     public AnimationClip closeDoorClip;
@@ -19,15 +19,16 @@ public class Elevator : MonoBehaviour {
     Vector3 curPos;
     Transform player;
     bool isMoving = false;
+    bool isAtFinish = false;
 
-    AudioSource audioS;
+    AudioSource audioSource;
     Animation anim;
     GameManager gm;
 
-    void Start() {
+    void Awake() {
         gm = GameObject.FindGameObjectWithTag("GameController").GetComponent<GameManager>();
         anim = GetComponent<Animation>();
-        audioS = GetComponent<AudioSource>();
+        audioSource = GetComponent<AudioSource>();
         defLayer = gameObject.layer;
         UpdateUI();
     }
@@ -48,13 +49,16 @@ public class Elevator : MonoBehaviour {
         transform.position = tot.position + Vector3.up * callHeight;
         transform.rotation = tot.rotation;
         // do anim
-        Tween t = transform.DOMoveY(transform.position.y, callSpeed);
+        anim.clip = closeDoorClip;
+        anim.Play();
+        Tween t = transform.DOMoveY(curPos.y, callSpeed);
         t.SetLoops(0);
         t.SetEase(Ease.OutCubic);
         t.Play();
         t.onComplete += () => LandComplete();
         isMoving = true;
         // gameObject.layer = movingLayer;
+        isAtFinish = true;
     }
     public void Land() {
         Transform newT = GameObject.FindGameObjectWithTag("StartPos").transform;
@@ -63,7 +67,9 @@ public class Elevator : MonoBehaviour {
             newT = gm.transform;
         }
         curPos = newT.position;
+        var poff = player.position - transform.position;
         transform.position = newT.position;
+        player.position = transform.position + poff;
         // transform.position = newT.position + Vector3.down * callHeight/2;
         transform.rotation = newT.rotation;
         // do anim
@@ -74,16 +80,22 @@ public class Elevator : MonoBehaviour {
         // t.onComplete += () => LandComplete();
         // isMoving = true;
         // gameObject.layer = movingLayer;
+        Invoke("LandComplete", 4);
         LandComplete();
     }
     void LandComplete() {
+        // audioSource.PlayOneShot(dingSfx);
+        transform.position = curPos;
         OpenDoors();
         isMoving = false;
         gameObject.layer = defLayer;
     }
     void PlayerIn() {
-        CloseDoors();
-        gm.NextLevel();
+        if (isAtFinish) {
+            CloseDoors();
+            gm.NextLevel();
+            isAtFinish = false;
+        }
     }
     public void HoldPlayer() {
         if (Vector3.Distance(transform.position, player.transform.position) > 10) {
@@ -102,13 +114,15 @@ public class Elevator : MonoBehaviour {
         // anim
         anim.clip = openDoorClip;
         anim.Play();
+        audioSource.PlayOneShot(doorMoveSfx);
     }
     public void CloseDoors() {
         anim.clip = closeDoorClip;
         anim.Play();
+        audioSource.PlayOneShot(doorMoveSfx);
     }
     public void OpenFinish() {
-        // todo sfx
+        audioSource.PlayOneShot(dingSfx);
     }
     public void CloseFinish() {
         HoldPlayer();

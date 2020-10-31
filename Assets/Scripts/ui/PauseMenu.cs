@@ -7,10 +7,12 @@ using UnityEngine.UI;
 public class PauseMenu : MonoBehaviour {
 
     public GameObject pauseMenu;
+    public GameObject skipButton;
     public bool paused = false;
 
     private void Awake() {
         SetPaused(paused);
+        skipButton.SetActive(false);
     }
     private void Update() {
         if (Keyboard.current.escapeKey.wasPressedThisFrame) {
@@ -21,6 +23,9 @@ public class PauseMenu : MonoBehaviour {
         }
         if (Keyboard.current.pKey.wasPressedThisFrame) {
             SetPaused(true);
+        }
+        if (Keyboard.current.endKey.wasPressedThisFrame) {
+            skipButton.SetActive(!skipButton.activeSelf);
         }
     }
 

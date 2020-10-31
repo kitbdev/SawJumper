@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Elevator
   - StartPos
+  - winner
   layers:
   - Default
   - TransparentFX

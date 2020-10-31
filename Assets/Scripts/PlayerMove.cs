@@ -49,6 +49,15 @@ public class PlayerMove : MonoBehaviour {
     Animator anim;
     CapsuleCollider capsule;
     Health health;
+    public AudioSource audioSource;
+    public AudioSource footAudioSource;
+    public float footstepDur = 0.5f;
+    public float footpitchrange = 0.08f;
+    float footstepLastTime = 0;
+
+    public AudioClip dieSliceClip;
+    public AudioClip dieFallClip;
+    public AudioClip jumpClip;
 
     [Space]
     [Header("*Calculated*")]
@@ -144,7 +153,9 @@ public class PlayerMove : MonoBehaviour {
         // Respawn();
         // anim.SetInteger("state",(int)state);
         // Debug.Log(anim.GetCurrentAnimatorClipInfo(0)[0].clip.name);
-        // todo ui prompt instead??
+        // ? have ui prompt instead?
+        audioSource.clip = health.curSource != 1 ? dieFallClip : dieSliceClip;
+        audioSource.Play();
         Invoke("Respawn", respawnDur);
     }
     public void Respawn() {
@@ -183,9 +194,16 @@ public class PlayerMove : MonoBehaviour {
             Respawn();
         }
 
+        if (vel.sqrMagnitude > 0.01f && inpvel.sqrMagnitude > 0.01f && isGrounded) {
+            if (Time.time > footstepLastTime + footstepDur) {
+                footAudioSource.pitch = 1 + Random.Range(-footpitchrange, footpitchrange);
+                footAudioSource.Play();
+                footstepLastTime = Time.time;
+            }
+        }
+
         // rotation
         // followTarg.rotation *= Quaternion.AngleAxis(inplook.x * turnSpeed * Time.deltaTime, Vector3.up);
-
         // rotate while moving
         if (camLocked) {
             float turnAmount = inplook.x;
@@ -213,7 +231,7 @@ public class PlayerMove : MonoBehaviour {
         bool anyMovement = inputVel.sqrMagnitude > 0.01f;
         if (inLockedStates) {
             anyMovement = false;
-            vel = Vector3.zero;
+            inpvel = Vector3.zero;
         }
         if (anyMovement) {
             inputVel = cam.TransformDirection(inputVel);
@@ -367,6 +385,7 @@ public class PlayerMove : MonoBehaviour {
             isGrounded = false;
             minJumpTimer = Time.time;
             inpIntraJumpRelease = false;
+            audioSource.PlayOneShot(jumpClip);
         }
         // moving platforms
         if (connectedBody) {

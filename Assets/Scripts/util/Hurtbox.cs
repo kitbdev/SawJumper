@@ -5,6 +5,7 @@ using UnityEngine;
 public class Hurtbox : MonoBehaviour {
 
     public int damage = 1;
+    public int dmgSource = 0;
     public LayerMask layerMask = 1;
     public float hitRepeatCooldown = 1;
     float lastHurtTime = 0;
@@ -33,7 +34,7 @@ public class Hurtbox : MonoBehaviour {
             if (!hitme) {
                 return;
             }
-            hitme.TakeDamage(damage);
+            hitme.TakeDamage(damage, dmgSource);
         }
     }
 }

@@ -13,6 +13,7 @@ public class Health : MonoBehaviour {
     public int curHealth = 0;
     public float lastHurtTime = 0;
     public float regenTickTime = 0;
+    public int curSource = 0;
     // shield?
 
     public UnityEvent healthChangedEvent;
@@ -45,7 +46,7 @@ public class Health : MonoBehaviour {
         curHealth = amount;
         healthChangedEvent.Invoke();
     }
-    public void TakeDamage(int amount = 1) {
+    public void TakeDamage(int amount = 1, int source=0) {
         // Debug.Log("Ow! "+amount);
         if (curHealth <= 0) {
             healthChangedEvent.Invoke();
@@ -54,6 +55,7 @@ public class Health : MonoBehaviour {
         curHealth -= amount;
         healthChangedEvent.Invoke();
         lastHurtTime = Time.time;
+        curSource = source;
         if (curHealth <= 0) {
             // die
             deadEvent.Invoke();
