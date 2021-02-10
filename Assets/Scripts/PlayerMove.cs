@@ -417,6 +417,7 @@ public class PlayerMove : MonoBehaviour {
         if (!climbLanding) {
             MakeClimbHelper();
         }
+        // todo set this the whole time until climb is finished, for moving platforms
         transform.position = climbLanding.position;
         transform.rotation = climbLanding.rotation;
     }

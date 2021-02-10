@@ -20,11 +20,11 @@ public class MainMenu : MonoBehaviour {
 
     void Start() {
         canQuit = false;
-// #if UNITY_PLAYER
-//         canQuit = true;
-// #elif UNITY_EDITOR
+        // #if UNITY_PLAYER
+        //         canQuit = true;
+        // #elif UNITY_EDITOR
         canQuit = true;
-// #endif
+        // #endif
         // if (!canQuit) {
         //     quitbtn.SetActive(false);
         // }
@@ -69,8 +69,14 @@ public class MainMenu : MonoBehaviour {
     public void Optionbtn() {
         // ? or in unity event
     }
+    bool isFullScreen = true;
     public void ToggleFullscreen() {
-        Screen.fullScreen = !Screen.fullScreen;
+        isFullScreen = !isFullScreen;
+        if (isFullScreen) {
+            Screen.fullScreenMode = FullScreenMode.Windowed;
+        } else {
+            Screen.fullScreenMode = FullScreenMode.ExclusiveFullScreen;
+        }
     }
     public void Exitbtn() {
         Application.Quit();
