@@ -4,6 +4,16 @@ using DG.Tweening;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+/// <summary>
+/// Player Controller
+/// Player movement, move states, jumping and climbing
+/// has a long, low jump better for jumping distances than heights
+/// can climb on top of objects to make up for low jump height in vertical movement
+/// jumping with coyote time (so if player jumped just too late, we're forgiving)
+/// sticks to moving platforms
+/// handles animations
+/// uses new Input System
+/// </summary>
 [SelectionBase]
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerMove : MonoBehaviour {

@@ -4,6 +4,9 @@ using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
 
+/// <summary>
+/// controls elevator animation and movement
+/// </summary>
 public class Elevator : MonoBehaviour {
 
     public float callSpeed = 1;

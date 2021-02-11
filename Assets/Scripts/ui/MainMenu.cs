@@ -4,6 +4,10 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
+/// <summary>
+/// Main menu controller
+/// buttons to toggle fullscreen, quit, or start game
+/// </summary>
 public class MainMenu : MonoBehaviour {
 
     public GameObject quitbtn;

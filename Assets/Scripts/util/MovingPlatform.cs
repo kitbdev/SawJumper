@@ -3,6 +3,12 @@ using System.Collections.Generic;
 using DG.Tweening;
 using UnityEngine;
 
+/// <summary>
+/// For moving platforms and sawblades
+/// controls how they move and or rotate
+/// easing, overall duration, open/closed loop, list of points to follow
+/// uses DOTween to move
+/// </summary>
 [SelectionBase]
 public class MovingPlatform : MonoBehaviour {
 

@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.UI;
 
+// todo store in player prefs?
 public struct Settings {
     public float musicVol;
     public float sfxVol;

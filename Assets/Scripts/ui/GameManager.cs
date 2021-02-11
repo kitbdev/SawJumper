@@ -4,6 +4,10 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 
+/// <summary>
+/// Controls game state
+/// performs scene loading
+/// </summary>
 public class GameManager : MonoBehaviour {
 
     // stores gamestate and stuff

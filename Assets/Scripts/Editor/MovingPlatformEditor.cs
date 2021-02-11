@@ -3,6 +3,20 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
+/// <summary>
+/// Moving Platform Editor for both moving platforms and sawblades
+/// makes it much easier to create and edit paths in the editor
+/// shows the path in 3D in the scene view
+/// shows important statistics about the path, 
+/// such as the distance, speed, percent completion, and duration for each point on the path
+/// adds moveable path points to the scene view
+/// handles rotation, global orientation, and move tool in scene
+/// adds buttons, values, and toggles to the inspector for path control
+/// Add and Remove point buttons, snap points to grid Button
+/// Physic Bounce Simulation of Path
+/// full Undo system support
+/// </summary>
+[SelectionBase]
 [CanEditMultipleObjects]
 [CustomEditor(typeof(MovingPlatform))]
 public class MovingPlatformEditor : Editor {
@@ -30,6 +44,8 @@ public class MovingPlatformEditor : Editor {
             return;
         }
         EditorGUI.BeginChangeCheck();
+
+        /// Add and Remove Points
         if (GUILayout.Button("Add Point")) {
             Undo.RecordObject(movingPlatform, "Add point");
             movingPlatform.path.Add(movingPlatform.path[movingPlatform.path.Count - 1] + Vector3.forward * 2);
@@ -53,6 +69,8 @@ public class MovingPlatformEditor : Editor {
         //         }
         //     }
         // }
+
+        /// Snapping to nearest full grid unit (1m)
         if (GUILayout.Button("Snap Points")) {
             if (movingPlatform.path.Count > 1) {
                 Undo.RecordObject(movingPlatform, "Snap points");
@@ -70,18 +88,22 @@ public class MovingPlatformEditor : Editor {
                 }
             }
         }
+        
+        /// Physics Bounce Simulation settings
         var wasphysBounces = physBounces;
-        // EditorGUILayout
         physBounces = EditorGUILayout.IntField("Physics Sim Bounces", physBounces);
         physRad = EditorGUILayout.FloatField("Phys Radius", physRad);
         // if (physBounces != wasphysBounces) {
-
         // }
         if (physBounces > 0 && GUILayout.Button("Physics Sim")) {
             RecalcPhys();
         }
+
+        /// Display settings
         // bool guiClosed = GUILayout.Toggle(movingPlatform.isOpen, "Open Loop");
         showDistances = GUILayout.Toggle(showDistances, "Show Distances");
+
+        /// Relative to anchor point toggles for movement and rotation
         var wasmoverel = moveRel;
         moveRel = GUILayout.Toggle(moveRel, "Relative Movement");
         if (moveRel && !wasmoverel) {
@@ -109,12 +131,15 @@ public class MovingPlatformEditor : Editor {
         //     Handles.color = Color.black;
         //     Handles.DrawDottedLines(movingPlatform.path, 10);
         // }
+
+        /// Change based on current Tool selection
         Vector3 gpos = movingPlatform.transform.position;
         Quaternion grot = movingPlatform.transform.rotation;
         if (Tools.pivotRotation == PivotRotation.Global) {
             grot = Quaternion.identity;
         }
         if (Tools.current == Tool.Move) {
+            /// position handles for all path points
             for (int i = 1; i < movingPlatform.path.Count; i++) {
                 Vector3 pos = movingPlatform.path[i];
                 pos = movingPlatform.transform.TransformPoint(pos);
@@ -126,6 +151,16 @@ public class MovingPlatformEditor : Editor {
                 }
             }
         }
+
+        /// Show useful stats
+        /// including for each point:
+        /// the distance it needs to travel from the last point
+        /// the percent along the path this point is
+        /// the inverse of the percent (useful for coordinating with other moving platforms)
+        /// the time it takes for the moving platform to get to this point
+        /// and for the initial point only:
+        /// the total distance and duration the path takes to loop
+        /// the speed of the moving platform
         if (showDistances) {
             float totalDist = 0;
             for (int i = 1; i < movingPlatform.path.Count; i++) {
@@ -155,9 +190,11 @@ public class MovingPlatformEditor : Editor {
             // labelPos0 += Vector3.up * 0.5f;
             Handles.Label(labelPos0, $"0m/{totalDist}m\n{totalDist/movingPlatform.duration:F3}m/s\n0s/{movingPlatform.duration}s");
         }
+        // show phys bounce preview?
         // if (physBounces>0 && !Application.isPlaying) {
-
         // }
+
+        /// logic for non relative movement and rotation
         if (!moveRel && !Application.isPlaying) {
             var newPos = movingPlatform.transform.position;
             if (newPos != lastPos) {
@@ -183,6 +220,15 @@ public class MovingPlatformEditor : Editor {
             }
         }
     }
+
+    /// <summary>
+    /// Performs a simple bouncing simulation
+    /// follows the current forward direction
+    /// once an environment wall is collided with, bounce off at the correct reflection angle
+    /// limited by number of bounces set in inspector
+    /// replaces the current path with generated points
+    /// stops if no environment wall collided with or the point matches another one exactly
+    /// </summary>
     void RecalcPhys() {
         Undo.RecordObject(movingPlatform, "Recalc Phys");
         movingPlatform.path.Clear();
@@ -207,6 +253,11 @@ public class MovingPlatformEditor : Editor {
         }
     }
 
+    /// <summary>
+    /// Draw gizmos in sceneview to show path, even when not currently editing
+    /// </summary>
+    /// <param name="mp"></param>
+    /// <param name="gizmoType"></param>
     [DrawGizmo(GizmoType.Selected | GizmoType.Active | GizmoType.NonSelected)]
     static void DrawGizmo(MovingPlatform mp, GizmoType gizmoType) {
         float rad = 0.3f;
@@ -220,21 +271,26 @@ public class MovingPlatformEditor : Editor {
             rad = 0.2f;
         }
         for (int i = 0; i < mp.path.Count; i++) {
+            // point position
             Vector3 pos = mp.path[i];
             pos = mp.transform.TransformPoint(pos);
             Gizmos.DrawSphere(pos, rad);
             if (i < mp.path.Count - 1) {
+                // line to next point
                 Vector3 toPos = mp.path[i + 1];
                 toPos = mp.transform.TransformPoint(toPos);
                 Gizmos.DrawLine(pos, toPos);
                 // Debug.Log("Line");
             }
         }
+        // todo show start point as well?
+        // path open or closed loop
         if (!mp.isOpen && mp.path.Count > 1) {
             var from = mp.transform.TransformPoint(mp.path[0]);
             var to = mp.transform.TransformPoint(mp.path[mp.path.Count - 1]);
             Gizmos.DrawLine(from, to);
         }
+        // rotation help
         if (mp.spinEuler != Vector3.zero) {
             Gizmos.DrawWireSphere(mp.transform.position, 1);
         }
